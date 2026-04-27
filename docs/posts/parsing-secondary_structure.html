@@ -1,0 +1,1882 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.28">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="author" content="Jonas Jäger">
+<meta name="dcterms.date" content="2026-04-15">
+<meta name="description" content="Simple implementation of a parsing algorithm in python.">
+
+<title>Parsing Nucleic Acid Pseudoknotted Secondary Structure:</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../">
+<script src="../site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-49e51e44f424ea8c7044b429bdbbbfe2.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap-158031087360bce0ff56dc785ce39e06.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<meta name="shinylive:serviceworker_dir" content="..">
+<script src="../site_libs/quarto-contrib/shinylive-0.10.8/shinylive/load-shinylive-sw.js" type="module"></script>
+<script src="../site_libs/quarto-contrib/shinylive-0.10.8/shinylive/run-python-blocks.js" type="module"></script>
+<link href="../site_libs/quarto-contrib/shinylive-0.10.8/shinylive/shinylive.css" rel="stylesheet">
+<link href="../site_libs/quarto-contrib/shinylive-quarto-css/shinylive-quarto.css" rel="stylesheet">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+<link rel="stylesheet" href="../styles.css">
+</head>
+
+<body class="nav-fixed quarto-light">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
+      <div class="navbar-container container-fluid">
+            <div id="quarto-search" class="" title="Search"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll me-auto">
+  <li class="nav-item">
+    <a class="nav-link" href="../index.html"> 
+<span class="menu-text">Home</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../blog.html"> 
+<span class="menu-text">Blog</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../software.html"> 
+<span class="menu-text">Software</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../contact.html"> 
+<span class="menu-text">Contact</span></a>
+  </li>  
+</ul>
+          </div> <!-- /navcollapse -->
+            <div class="quarto-navbar-tools">
+</div>
+      </div> <!-- /container-fluid -->
+    </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#introduction" id="toc-introduction" class="nav-link active" data-scroll-target="#introduction">Introduction</a>
+  <ul class="collapse">
+  <li><a href="#setup" id="toc-setup" class="nav-link" data-scroll-target="#setup">Setup</a></li>
+  </ul></li>
+  <li><a href="#extended-dot-bracket-notation" id="toc-extended-dot-bracket-notation" class="nav-link" data-scroll-target="#extended-dot-bracket-notation">Extended Dot-Bracket Notation</a></li>
+  <li><a href="#pairtable" id="toc-pairtable" class="nav-link" data-scroll-target="#pairtable">PairTable</a>
+  <ul class="collapse">
+  <li><a href="#implementation-details" id="toc-implementation-details" class="nav-link" data-scroll-target="#implementation-details">Implementation details</a></li>
+  <li><a href="#example" id="toc-example" class="nav-link" data-scroll-target="#example">Example</a></li>
+  </ul></li>
+  <li><a href="#identify-closed-regions" id="toc-identify-closed-regions" class="nav-link" data-scroll-target="#identify-closed-regions">Identify closed regions</a></li>
+  <li><a href="#new-test-of-visual" id="toc-new-test-of-visual" class="nav-link" data-scroll-target="#new-test-of-visual">new test of visual</a></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">Parsing Nucleic Acid Pseudoknotted Secondary Structure:</h1>
+  <div class="quarto-categories">
+    <div class="quarto-category">Python</div>
+    <div class="quarto-category">RNA</div>
+  </div>
+  </div>
+
+<div>
+  <div class="description">
+    Simple implementation of a parsing algorithm in python.
+  </div>
+</div>
+
+
+<div class="quarto-title-meta">
+
+    <div>
+    <div class="quarto-title-meta-heading">Author</div>
+    <div class="quarto-title-meta-contents">
+             <p>Jonas Jäger </p>
+          </div>
+  </div>
+    
+    <div>
+    <div class="quarto-title-meta-heading">Published</div>
+    <div class="quarto-title-meta-contents">
+      <p class="date">April 15, 2026</p>
+    </div>
+  </div>
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<p>This algorithm was published in 2007 by <em>BAHARAK RASTEGARI</em> and <em>ANNE CONDON</em> in the JOURNAL OF COMPUTATIONAL BIOLOGY (DOI: 10.1089/cmb.2006.0108).</p>
+<section id="introduction" class="level2">
+<h2 class="anchored" data-anchor-id="introduction">Introduction</h2>
+<p>Pseudoknots are a class of RNA secondary structures that are found in all three domains of life as well as viruses <a href="https://en.wikipedia.org/wiki/Pseudoknot">wikipedia</a>.</p>
+<p><em>Prediction</em> of pseudoknotted structures from a given sequence is a very, <em>very</em> difficult problem and found to be <em>NP-hard</em>. Prediction of non-pseudoknotted structures can be done via a dynamic programing approach in <span class="math inline">\(O(N^3)\)</span> time via e.g Nussinov or Zuker’s algorithm.</p>
+<p>In this blog post, we simply want to <strong>parse</strong> a given RNA molecule with its already predcited structure (pseudoknotted or non-pseudoknotted) and build a Tree-of-closed-regions of the structure.</p>
+<section id="setup" class="level3">
+<h3 class="anchored" data-anchor-id="setup">Setup</h3>
+<p>First we need to make sure python is running by importing some packages.</p>
+<div id="55c935fb" class="cell" data-execution_count="1">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> pandas <span class="im">as</span> pd</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> matplotlib.pyplot <span class="im">as</span> plt</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"Hello World!"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Hello World!</code></pre>
+</div>
+</div>
+</section>
+</section>
+<section id="extended-dot-bracket-notation" class="level2">
+<h2 class="anchored" data-anchor-id="extended-dot-bracket-notation">Extended Dot-Bracket Notation</h2>
+<p>A RNA secondary structure can be shown in different ways. One common representation is the Dot-bracket notation, where each base pair is represented with a opening <code>(</code> and closing bracket <code>)</code>. Nucleotides that are unbound are displayed as simple dots <code>.</code>.</p>
+<p>This representation needs to be extended with more opening and closing characters when we want to deal with pseudoknots. There, we introduce the extended dot-bracket notation that uses these supported bracket types <code>()  []  {}  &lt;&gt;  Aa  Bb  Cc  Dd  Ee  Ff  Gg  Hh  Ii  Jj</code>.</p>
+<p>Lets see a test example:</p>
+<div id="38483c8e" class="cell" data-execution_count="2">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>sequence <span class="op">=</span> <span class="st">"GCCCCAUGGAGGUGGCUGGGGCCAGCCUCAUGGAGGUGGCUGGGG"</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>edb <span class="op">=</span> <span class="st">"...[[[[[[............((((((]]]]]]....)))))).."</span> <span class="co"># extended dot-bracket notation of RNA molecule</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</section>
+<section id="pairtable" class="level2">
+<h2 class="anchored" data-anchor-id="pairtable">PairTable</h2>
+<p>A PairTable is essentially a base pair mapping function <code>bp()</code>, that maps a nucleotide at a specific index to its base pairing partner.</p>
+<p><strong>For example</strong>: in the structure <code>..[[..]]</code> the base at index 2 (zero-based indexing) pairs with base at index 7. Therefore, <code>bp(2) = 7</code> and vice verca <code>bp(7) = 2</code>.</p>
+<p>In oder to get from the extended dot-bracket notation to a PairTable representation define a function <code>dot_bracket_to_pairtable()</code>.</p>
+<section id="implementation-details" class="level3">
+<h3 class="anchored" data-anchor-id="implementation-details">Implementation details</h3>
+<p>First, we define our valid character sets (opening, closing and unpaired) and make a mapping dictionary that maps every opening/closing <em>token</em> to its corresponding closing/opening <em>kind</em> (e.g <code>round, square, curly etc</code>).</p>
+<p>Example: When we encounter a opening angle <code>&lt;</code>, our mapping dictionary <code>OPEN_TO_KIND[&lt;]</code> maps to the <code>angle</code> kind. Equivalently, <code>CLOSE_TO_KIND[&gt;]</code> maps also to the <code>angle</code> kind. This means every opening/closing token pair maps the same <em>kind</em>.</p>
+<p>Additionally, we need to keep different bracket types apart, so we can handle also pseudoknotted structures. Therefore, the basic idea is to maintain a <strong>seperate stack for each bracket kind</strong>.</p>
+<div class="callout callout-style-default callout-tip callout-titled" title="What is a Stack?">
+<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-1-contents" aria-controls="callout-1" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Tip</span>What is a Stack?
+</div>
+<div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
+</div>
+<div id="callout-1" class="callout-1-contents callout-collapse collapse">
+<div class="callout-body-container callout-body">
+<p>A stack is an <em>abstract data type</em> that operates on the <em>LIFO (Last In, First Out)</em> principle. It relies on two primary operations: <em>push</em>, which adds an element to the top of the stack, and <em>pop</em>, which removes the most recently added element. Because of the LIFO principle, the last item placed onto the stack is always the first one to be taken off. For more information, see <a href="https://en.wikipedia.org/wiki/Stack_(abstract_data_type)">Wikipedia</a>.</p>
+</div>
+</div>
+</div>
+<p>We then loop over every character of the input structure and store the index <code>i</code>, and the character <code>ch</code>. We then check for three things:</p>
+<ul>
+<li>is <code>ch</code> in the unpaired token set</li>
+<li>is <code>ch</code> in the opening token set</li>
+<li>is <code>ch</code> in the closing token set</li>
+</ul>
+<hr>
+<ol type="1">
+<li>If <code>ch</code> is in the unpaired token set, we just continue with our iteration.</li>
+<li>If <code>ch</code> is in our opening token set, we push the corresponding index <code>i</code> onto the stack with the corresponding key <code>kind</code>.</li>
+<li>If <code>ch</code> is in the closing set, we look if the key <code>kind</code> is in the stack. If it is not in the stack, we know that we encountered a closing bracket without a opening bracket, which is not a valid secondary structure. If <code>kind</code> is indeed in the stack, we pop the last added index and have found our base pairing indices and write the indices into our pair table.</li>
+</ol>
+<p>At the end the stack must be empty, because every opening bracket must pair with a closing bracket. So we check this with short iteration over the stack items. If the stack is not empty, we know there is an unmatched opening bracket.</p>
+<p>If no errors occur, the pair table is returned.</p>
+<div class="callout callout-style-default callout-note callout-titled" title="Note: append() and get() methods">
+<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-2-contents" aria-controls="callout-2" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Note: append() and get() methods
+</div>
+<div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
+</div>
+<div id="callout-2" class="callout-2-contents callout-collapse collapse">
+<div class="callout-body-container callout-body">
+<ul>
+<li>The <code>.get()</code> method is similar to the <em>pop</em> method, but does not actually remove the object from the stack but just inspects it.</li>
+<li>The <code>.append()</code> method in our code corresponds to a <em>push</em> method, as we use a list as a data structure for our abstract data type <em>stack</em></li>
+</ul>
+</div>
+</div>
+</div>
+<div id="c38be3fb" class="cell" data-execution_count="3">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> dot_bracket_to_pairtable(structure: <span class="bu">str</span>) <span class="op">-&gt;</span> <span class="bu">list</span>[<span class="bu">int</span> <span class="op">|</span> <span class="va">None</span>]:</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="co">    Convert an extended dot-bracket string to a pair table representation.</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="co">    In the pair table, each index contains either:</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="co">      - None  if the position is unpaired</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a><span class="co">      - int   the 0-based index of the paired partner</span></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a><span class="co">    Supported bracket types:</span></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a><span class="co">      ()  []  {}  &lt;&gt;  Aa  Bb  Cc  Dd  Ee  Ff  Gg  Hh  Ii  Jj</span></span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a><span class="co">    Raises:</span></span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a><span class="co">      ValueError  on unrecognised characters, unmatched closing brackets,</span></span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a><span class="co">                  or unclosed opening brackets.</span></span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a><span class="co">    """</span></span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Map every closing token to its matching opening kind</span></span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a>    OPEN_TO_KIND <span class="op">=</span> {</span>
+<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a>        <span class="st">"("</span>: <span class="st">"round"</span>,</span>
+<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a>        <span class="st">"["</span>: <span class="st">"square"</span>,</span>
+<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a>        <span class="st">"{"</span>: <span class="st">"curly"</span>,</span>
+<span id="cb4-21"><a href="#cb4-21" aria-hidden="true" tabindex="-1"></a>        <span class="st">"&lt;"</span>: <span class="st">"angle"</span>,</span>
+<span id="cb4-22"><a href="#cb4-22" aria-hidden="true" tabindex="-1"></a>        <span class="op">**</span>{ch: ch.lower() <span class="cf">for</span> ch <span class="kw">in</span> <span class="st">"ABCDEFGHIJ"</span>},   <span class="co"># uppercase = open</span></span>
+<span id="cb4-23"><a href="#cb4-23" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb4-24"><a href="#cb4-24" aria-hidden="true" tabindex="-1"></a>    CLOSE_TO_KIND <span class="op">=</span> {</span>
+<span id="cb4-25"><a href="#cb4-25" aria-hidden="true" tabindex="-1"></a>        <span class="st">")"</span>: <span class="st">"round"</span>,</span>
+<span id="cb4-26"><a href="#cb4-26" aria-hidden="true" tabindex="-1"></a>        <span class="st">"]"</span>: <span class="st">"square"</span>,</span>
+<span id="cb4-27"><a href="#cb4-27" aria-hidden="true" tabindex="-1"></a>        <span class="st">"}"</span>: <span class="st">"curly"</span>,</span>
+<span id="cb4-28"><a href="#cb4-28" aria-hidden="true" tabindex="-1"></a>        <span class="st">"&gt;"</span>: <span class="st">"angle"</span>,</span>
+<span id="cb4-29"><a href="#cb4-29" aria-hidden="true" tabindex="-1"></a>        <span class="op">**</span>{ch: ch.lower() <span class="cf">for</span> ch <span class="kw">in</span> <span class="st">"abcdefghij"</span>},   <span class="co"># lowercase = close</span></span>
+<span id="cb4-30"><a href="#cb4-30" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb4-31"><a href="#cb4-31" aria-hidden="true" tabindex="-1"></a>    UNPAIRED <span class="op">=</span> <span class="bu">set</span>(<span class="st">"."</span>)</span>
+<span id="cb4-32"><a href="#cb4-32" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-33"><a href="#cb4-33" aria-hidden="true" tabindex="-1"></a>    <span class="co"># initialze stacks and pairtable</span></span>
+<span id="cb4-34"><a href="#cb4-34" aria-hidden="true" tabindex="-1"></a>    stacks: <span class="bu">dict</span>[<span class="bu">str</span>, <span class="bu">list</span>[<span class="bu">int</span>]] <span class="op">=</span> {}</span>
+<span id="cb4-35"><a href="#cb4-35" aria-hidden="true" tabindex="-1"></a>    pairtable: <span class="bu">list</span>[<span class="bu">int</span> <span class="op">|</span> <span class="va">None</span>] <span class="op">=</span> [<span class="va">None</span>] <span class="op">*</span> <span class="bu">len</span>(structure)</span>
+<span id="cb4-36"><a href="#cb4-36" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-37"><a href="#cb4-37" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-38"><a href="#cb4-38" aria-hidden="true" tabindex="-1"></a>    <span class="co"># loop over every character in the structure</span></span>
+<span id="cb4-39"><a href="#cb4-39" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> i, ch <span class="kw">in</span> <span class="bu">enumerate</span>(structure):</span>
+<span id="cb4-40"><a href="#cb4-40" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> ch <span class="kw">in</span> UNPAIRED:</span>
+<span id="cb4-41"><a href="#cb4-41" aria-hidden="true" tabindex="-1"></a>            <span class="cf">continue</span></span>
+<span id="cb4-42"><a href="#cb4-42" aria-hidden="true" tabindex="-1"></a>        <span class="cf">elif</span> ch <span class="kw">in</span> OPEN_TO_KIND:</span>
+<span id="cb4-43"><a href="#cb4-43" aria-hidden="true" tabindex="-1"></a>            kind <span class="op">=</span> OPEN_TO_KIND[ch]</span>
+<span id="cb4-44"><a href="#cb4-44" aria-hidden="true" tabindex="-1"></a>            stacks.setdefault(kind, []).append(i) </span>
+<span id="cb4-45"><a href="#cb4-45" aria-hidden="true" tabindex="-1"></a>            <span class="co"># .setdefault() adds the key "kind" with a default list empty "[]"</span></span>
+<span id="cb4-46"><a href="#cb4-46" aria-hidden="true" tabindex="-1"></a>            <span class="co"># if the key "kind" is missing, and then appends the list with index i</span></span>
+<span id="cb4-47"><a href="#cb4-47" aria-hidden="true" tabindex="-1"></a>            <span class="co"># .append() is equivalent to the push operation of a stack </span></span>
+<span id="cb4-48"><a href="#cb4-48" aria-hidden="true" tabindex="-1"></a>            <span class="co"># (because we take a list as a data structure for our stack)</span></span>
+<span id="cb4-49"><a href="#cb4-49" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-50"><a href="#cb4-50" aria-hidden="true" tabindex="-1"></a>        <span class="cf">elif</span> ch <span class="kw">in</span> CLOSE_TO_KIND:</span>
+<span id="cb4-51"><a href="#cb4-51" aria-hidden="true" tabindex="-1"></a>            kind <span class="op">=</span> CLOSE_TO_KIND[ch]</span>
+<span id="cb4-52"><a href="#cb4-52" aria-hidden="true" tabindex="-1"></a>            stack <span class="op">=</span> stacks.get(kind) </span>
+<span id="cb4-53"><a href="#cb4-53" aria-hidden="true" tabindex="-1"></a>            <span class="co"># .get() returns 'None' if kind is not in the dict (but does not pop it yet!)</span></span>
+<span id="cb4-54"><a href="#cb4-54" aria-hidden="true" tabindex="-1"></a>            <span class="cf">if</span> <span class="kw">not</span> stack:</span>
+<span id="cb4-55"><a href="#cb4-55" aria-hidden="true" tabindex="-1"></a>                <span class="cf">raise</span> <span class="pp">ValueError</span>(</span>
+<span id="cb4-56"><a href="#cb4-56" aria-hidden="true" tabindex="-1"></a>                    <span class="ss">f"Unmatched closing bracket </span><span class="sc">{</span>ch<span class="sc">!r}</span><span class="ss"> at position </span><span class="sc">{</span>i<span class="sc">}</span><span class="ss">"</span></span>
+<span id="cb4-57"><a href="#cb4-57" aria-hidden="true" tabindex="-1"></a>                )</span>
+<span id="cb4-58"><a href="#cb4-58" aria-hidden="true" tabindex="-1"></a>            j <span class="op">=</span> stack.pop()</span>
+<span id="cb4-59"><a href="#cb4-59" aria-hidden="true" tabindex="-1"></a>            pairtable[i] <span class="op">=</span> j</span>
+<span id="cb4-60"><a href="#cb4-60" aria-hidden="true" tabindex="-1"></a>            pairtable[j] <span class="op">=</span> i</span>
+<span id="cb4-61"><a href="#cb4-61" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-62"><a href="#cb4-62" aria-hidden="true" tabindex="-1"></a>        <span class="cf">else</span>:</span>
+<span id="cb4-63"><a href="#cb4-63" aria-hidden="true" tabindex="-1"></a>            <span class="cf">raise</span> <span class="pp">ValueError</span>(</span>
+<span id="cb4-64"><a href="#cb4-64" aria-hidden="true" tabindex="-1"></a>                <span class="ss">f"Invalid token </span><span class="sc">{</span>ch<span class="sc">!r}</span><span class="ss"> at position </span><span class="sc">{</span>i<span class="sc">}</span><span class="ss">"</span></span>
+<span id="cb4-65"><a href="#cb4-65" aria-hidden="true" tabindex="-1"></a>            )</span>
+<span id="cb4-66"><a href="#cb4-66" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-67"><a href="#cb4-67" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> kind, stack <span class="kw">in</span> stacks.items():</span>
+<span id="cb4-68"><a href="#cb4-68" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> stack:</span>
+<span id="cb4-69"><a href="#cb4-69" aria-hidden="true" tabindex="-1"></a>            <span class="cf">raise</span> <span class="pp">ValueError</span>(</span>
+<span id="cb4-70"><a href="#cb4-70" aria-hidden="true" tabindex="-1"></a>                <span class="ss">f"Unmatched opening bracket of kind '</span><span class="sc">{</span>kind<span class="sc">}</span><span class="ss">' at position </span><span class="sc">{</span>stack[<span class="dv">0</span>]<span class="sc">}</span><span class="ss">"</span></span>
+<span id="cb4-71"><a href="#cb4-71" aria-hidden="true" tabindex="-1"></a>            )</span>
+<span id="cb4-72"><a href="#cb4-72" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-73"><a href="#cb4-73" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> pairtable</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</section>
+<section id="example" class="level3">
+<h3 class="anchored" data-anchor-id="example">Example</h3>
+<p>Lets look at a small example that converts the extended dot-bracket string <code>..[[..]]</code> into the corresponding pair table. We walk trough each step of the conversion:</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Position</th>
+<th>Character</th>
+<th>Stack (square)</th>
+<th>Action</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>0</td>
+<td><code>.</code></td>
+<td><code>[]</code></td>
+<td>skip — unpaired</td>
+</tr>
+<tr class="even">
+<td>1</td>
+<td><code>.</code></td>
+<td><code>[]</code></td>
+<td>skip — unpaired</td>
+</tr>
+<tr class="odd">
+<td>2</td>
+<td><code>[</code></td>
+<td><code>[2]</code></td>
+<td>push 2</td>
+</tr>
+<tr class="even">
+<td>3</td>
+<td><code>[</code></td>
+<td><code>[2, 3]</code></td>
+<td>push 3</td>
+</tr>
+<tr class="odd">
+<td>4</td>
+<td><code>.</code></td>
+<td><code>[2, 3]</code></td>
+<td>skip — unpaired</td>
+</tr>
+<tr class="even">
+<td>5</td>
+<td><code>.</code></td>
+<td><code>[2, 3]</code></td>
+<td>skip — unpaired</td>
+</tr>
+<tr class="odd">
+<td>6</td>
+<td><code>]</code></td>
+<td><code>[2]</code></td>
+<td>pop 3 → pair (3, 6)</td>
+</tr>
+<tr class="even">
+<td>7</td>
+<td><code>]</code></td>
+<td><code>[]</code></td>
+<td>pop 2 → pair (2, 7)</td>
+</tr>
+</tbody>
+</table>
+<p>So, our resulting pair table should look like this: <code>[None, None, 7, 6, None, None, 3, 2]</code>.</p>
+<p>And indeed, if we run our function this is the correct pair table.</p>
+<div id="6c0999d1" class="cell" data-execution_count="4">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>example_edb <span class="op">=</span> <span class="st">"..[[..]]"</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>example_pt <span class="op">=</span> dot_bracket_to_pairtable(example_edb)</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(example_pt)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[None, None, 7, 6, None, None, 3, 2]</code></pre>
+</div>
+</div>
+</section>
+</section>
+<section id="identify-closed-regions" class="level2">
+<h2 class="anchored" data-anchor-id="identify-closed-regions">Identify closed regions</h2>
+<p>We want to implement a parsing algorithm for closed regions of a pseudoknotted RNA secondary structure. Closed regions are defined as a region [i, j] of a seconday strucutre where no base inside this invertal points to a base outside of this interval.</p>
+<div id="1c8f8017" class="cell" data-execution_count="5">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> __future__ <span class="im">import</span> annotations</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> dataclasses <span class="im">import</span> dataclass, field</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a><span class="co"># @dataclass decorator creates default methods for classes like __init__, or __repr__ if these are not specifically defined.</span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a><span class="co"># here: __init__ is created as default, but __repr__ is defined by us!</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a><span class="at">@dataclass</span> </span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> Node:</span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>    i: <span class="bu">int</span></span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>    j: <span class="bu">int</span></span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>    children: <span class="bu">list</span>[Node] <span class="op">=</span> field(default_factory<span class="op">=</span><span class="bu">list</span>)</span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> add_child(<span class="va">self</span>, child: Node) <span class="op">-&gt;</span> <span class="va">None</span>:</span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.children.append(child)</span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> <span class="fu">__iter__</span>(<span class="va">self</span>):</span>
+<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a>        <span class="co">"""Postfix (post-order) traversal: children before parent."""</span></span>
+<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> child <span class="kw">in</span> <span class="va">self</span>.children:</span>
+<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a>            <span class="cf">yield</span> <span class="cf">from</span> child</span>
+<span id="cb7-20"><a href="#cb7-20" aria-hidden="true" tabindex="-1"></a>        <span class="cf">yield</span> <span class="va">self</span></span>
+<span id="cb7-21"><a href="#cb7-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-22"><a href="#cb7-22" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> <span class="fu">__repr__</span>(<span class="va">self</span>):</span>
+<span id="cb7-23"><a href="#cb7-23" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> <span class="ss">f"Node(</span><span class="sc">{</span><span class="va">self</span><span class="sc">.</span>i<span class="sc">}</span><span class="ss">, </span><span class="sc">{</span><span class="va">self</span><span class="sc">.</span>j<span class="sc">}</span><span class="ss">)"</span></span>
+<span id="cb7-24"><a href="#cb7-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-25"><a href="#cb7-25" aria-hidden="true" tabindex="-1"></a><span class="co"># https://mastering-python.com/blog/2023/using-post-init-with-dataclasses</span></span>
+<span id="cb7-26"><a href="#cb7-26" aria-hidden="true" tabindex="-1"></a><span class="co"># with @dataclass, we automatically init the class attributes (here: this would be n AND root), however, we import "field" to tell that we do not want root to be initalized yet!</span></span>
+<span id="cb7-27"><a href="#cb7-27" aria-hidden="true" tabindex="-1"></a><span class="co"># then we use the __post_init__ method to initalize root only AFTER __init__ (this means after initalizing n), and therefore, we initalize root</span></span>
+<span id="cb7-28"><a href="#cb7-28" aria-hidden="true" tabindex="-1"></a><span class="at">@dataclass</span></span>
+<span id="cb7-29"><a href="#cb7-29" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> ClosedRegionTree:</span>
+<span id="cb7-30"><a href="#cb7-30" aria-hidden="true" tabindex="-1"></a>    n: <span class="bu">int</span> <span class="co"># n represents the sequence length of the input structure</span></span>
+<span id="cb7-31"><a href="#cb7-31" aria-hidden="true" tabindex="-1"></a>    root: Node <span class="op">=</span> field(init<span class="op">=</span><span class="va">False</span>)</span>
+<span id="cb7-32"><a href="#cb7-32" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-33"><a href="#cb7-33" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> __post_init__(<span class="va">self</span>):</span>
+<span id="cb7-34"><a href="#cb7-34" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Sentinel root [0, n+1] as described in the procedure</span></span>
+<span id="cb7-35"><a href="#cb7-35" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.root <span class="op">=</span> Node(<span class="op">-</span><span class="dv">1</span>, <span class="va">self</span>.n)</span>
+<span id="cb7-36"><a href="#cb7-36" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-37"><a href="#cb7-37" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> _last_child(<span class="va">self</span>) <span class="op">-&gt;</span> Node <span class="op">|</span> <span class="va">None</span>:</span>
+<span id="cb7-38"><a href="#cb7-38" aria-hidden="true" tabindex="-1"></a>        <span class="co">"""Child of root with largest left border, or None if no children."""</span></span>
+<span id="cb7-39"><a href="#cb7-39" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> <span class="va">self</span>.root.children[<span class="op">-</span><span class="dv">1</span>] <span class="cf">if</span> <span class="va">self</span>.root.children <span class="cf">else</span> <span class="va">None</span></span>
+<span id="cb7-40"><a href="#cb7-40" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-41"><a href="#cb7-41" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> add(<span class="va">self</span>, i: <span class="bu">int</span>, j: <span class="bu">int</span>) <span class="op">-&gt;</span> <span class="va">None</span>:</span>
+<span id="cb7-42"><a href="#cb7-42" aria-hidden="true" tabindex="-1"></a>        <span class="co">"""Add closed region [i, j] in postfix order (procedure Add-To-Tree)."""</span></span>
+<span id="cb7-43"><a href="#cb7-43" aria-hidden="true" tabindex="-1"></a>        node <span class="op">=</span> Node(i, j)                          <span class="co"># step 1</span></span>
+<span id="cb7-44"><a href="#cb7-44" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-45"><a href="#cb7-45" aria-hidden="true" tabindex="-1"></a>        current <span class="op">=</span> <span class="va">self</span>._last_child()               <span class="co"># step 2</span></span>
+<span id="cb7-46"><a href="#cb7-46" aria-hidden="true" tabindex="-1"></a>        sentinel <span class="op">=</span> Node(<span class="dv">0</span>, <span class="dv">0</span>)</span>
+<span id="cb7-47"><a href="#cb7-47" aria-hidden="true" tabindex="-1"></a>        ab <span class="op">=</span> current <span class="cf">if</span> current <span class="kw">is</span> <span class="kw">not</span> <span class="va">None</span> <span class="cf">else</span> sentinel</span>
+<span id="cb7-48"><a href="#cb7-48" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-49"><a href="#cb7-49" aria-hidden="true" tabindex="-1"></a>        <span class="cf">while</span> ab.i <span class="op">&gt;</span> i:                            <span class="co"># step 3</span></span>
+<span id="cb7-50"><a href="#cb7-50" aria-hidden="true" tabindex="-1"></a>            node.add_child(ab)                     <span class="co"># step 4</span></span>
+<span id="cb7-51"><a href="#cb7-51" aria-hidden="true" tabindex="-1"></a>            <span class="va">self</span>.root.children.pop()</span>
+<span id="cb7-52"><a href="#cb7-52" aria-hidden="true" tabindex="-1"></a>            current <span class="op">=</span> <span class="va">self</span>._last_child()           <span class="co"># step 5</span></span>
+<span id="cb7-53"><a href="#cb7-53" aria-hidden="true" tabindex="-1"></a>            ab <span class="op">=</span> current <span class="cf">if</span> current <span class="kw">is</span> <span class="kw">not</span> <span class="va">None</span> <span class="cf">else</span> sentinel</span>
+<span id="cb7-54"><a href="#cb7-54" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-55"><a href="#cb7-55" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.root.add_child(node)                  <span class="co"># step 7</span></span>
+<span id="cb7-56"><a href="#cb7-56" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-57"><a href="#cb7-57" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> postfix(<span class="va">self</span>) <span class="op">-&gt;</span> <span class="bu">list</span>[Node]:</span>
+<span id="cb7-58"><a href="#cb7-58" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> <span class="bu">list</span>(<span class="va">self</span>.root)</span>
+<span id="cb7-59"><a href="#cb7-59" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-60"><a href="#cb7-60" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> display(<span class="va">self</span>) <span class="op">-&gt;</span> <span class="va">None</span>:</span>
+<span id="cb7-61"><a href="#cb7-61" aria-hidden="true" tabindex="-1"></a>        <span class="kw">def</span> _display(node: Node, prefix: <span class="bu">str</span> <span class="op">=</span> <span class="st">""</span>, is_last: <span class="bu">bool</span> <span class="op">=</span> <span class="va">True</span>) <span class="op">-&gt;</span> <span class="va">None</span>:</span>
+<span id="cb7-62"><a href="#cb7-62" aria-hidden="true" tabindex="-1"></a>            connector <span class="op">=</span> <span class="st">"└── "</span> <span class="cf">if</span> is_last <span class="cf">else</span> <span class="st">"├── "</span></span>
+<span id="cb7-63"><a href="#cb7-63" aria-hidden="true" tabindex="-1"></a>            <span class="bu">print</span>(prefix <span class="op">+</span> connector <span class="op">+</span> <span class="ss">f"[</span><span class="sc">{</span>node<span class="sc">.</span>i<span class="sc">}</span><span class="ss">, </span><span class="sc">{</span>node<span class="sc">.</span>j<span class="sc">}</span><span class="ss">]"</span>)</span>
+<span id="cb7-64"><a href="#cb7-64" aria-hidden="true" tabindex="-1"></a>            child_prefix <span class="op">=</span> prefix <span class="op">+</span> (<span class="st">"    "</span> <span class="cf">if</span> is_last <span class="cf">else</span> <span class="st">"│   "</span>)</span>
+<span id="cb7-65"><a href="#cb7-65" aria-hidden="true" tabindex="-1"></a>            <span class="cf">for</span> i, child <span class="kw">in</span> <span class="bu">enumerate</span>(node.children):</span>
+<span id="cb7-66"><a href="#cb7-66" aria-hidden="true" tabindex="-1"></a>                _display(child, child_prefix, is_last<span class="op">=</span>(i <span class="op">==</span> <span class="bu">len</span>(node.children) <span class="op">-</span> <span class="dv">1</span>))</span>
+<span id="cb7-67"><a href="#cb7-67" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-68"><a href="#cb7-68" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="ss">f"[</span><span class="sc">{</span><span class="va">self</span><span class="sc">.</span>root<span class="sc">.</span>i<span class="sc">}</span><span class="ss">, </span><span class="sc">{</span><span class="va">self</span><span class="sc">.</span>root<span class="sc">.</span>j<span class="sc">}</span><span class="ss">]"</span>)</span>
+<span id="cb7-69"><a href="#cb7-69" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> i, child <span class="kw">in</span> <span class="bu">enumerate</span>(<span class="va">self</span>.root.children):</span>
+<span id="cb7-70"><a href="#cb7-70" aria-hidden="true" tabindex="-1"></a>            _display(child, <span class="st">""</span>, is_last<span class="op">=</span>(i <span class="op">==</span> <span class="bu">len</span>(<span class="va">self</span>.root.children) <span class="op">-</span> <span class="dv">1</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div id="426921c8" class="cell" data-execution_count="6">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb8"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>tree <span class="op">=</span> ClosedRegionTree(n <span class="op">=</span> <span class="dv">15</span>)</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(tree)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>ClosedRegionTree(n=15, root=Node(-1, 15))</code></pre>
+</div>
+</div>
+<div id="e3e2728b" class="cell" data-execution_count="8">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb10"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> BuildClosedRegionsTree(structure: <span class="bu">str</span>):</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>    n <span class="op">=</span> <span class="bu">len</span>(structure)</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>    pt <span class="op">=</span> dot_bracket_to_pairtable(structure)</span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>    tree <span class="op">=</span> ClosedRegionTree(n)</span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>    stack <span class="op">=</span> []</span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> i, char <span class="kw">in</span> <span class="bu">enumerate</span>(structure):</span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>        <span class="co"># pt[i] is the index of the partner nucleotide, or None if unpaired</span></span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> pt[i] <span class="kw">is</span> <span class="kw">not</span> <span class="va">None</span>:</span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a>            <span class="co"># Case 1: Opening bracket (i &lt; pt[i])</span></span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a>            <span class="cf">if</span> i <span class="op">&lt;</span> pt[i]:</span>
+<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a>                stack.append([i, pt[i]])</span>
+<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a>            </span>
+<span id="cb10-15"><a href="#cb10-15" aria-hidden="true" tabindex="-1"></a>            <span class="co"># Case 2: Closing bracket (pt[i] &lt; i)</span></span>
+<span id="cb10-16"><a href="#cb10-16" aria-hidden="true" tabindex="-1"></a>            <span class="co"># This logic handles interval merging for pseudoknots</span></span>
+<span id="cb10-17"><a href="#cb10-17" aria-hidden="true" tabindex="-1"></a>            <span class="cf">elif</span> pt[i] <span class="op">&lt;</span> i:</span>
+<span id="cb10-18"><a href="#cb10-18" aria-hidden="true" tabindex="-1"></a>                E <span class="op">=</span> i</span>
+<span id="cb10-19"><a href="#cb10-19" aria-hidden="true" tabindex="-1"></a>                <span class="co"># explicitly check for pseudoknot crossing</span></span>
+<span id="cb10-20"><a href="#cb10-20" aria-hidden="true" tabindex="-1"></a>                <span class="co"># even though on properly defined pair tables, the for loop would already poped stack entries where top.E &lt;= i</span></span>
+<span id="cb10-21"><a href="#cb10-21" aria-hidden="true" tabindex="-1"></a>                <span class="cf">while</span> stack <span class="kw">and</span> stack[<span class="op">-</span><span class="dv">1</span>][<span class="dv">1</span>] <span class="op">&gt;</span> i <span class="kw">and</span> stack[<span class="op">-</span><span class="dv">1</span>][<span class="dv">0</span>] <span class="op">&gt;</span> pt[i]:</span>
+<span id="cb10-22"><a href="#cb10-22" aria-hidden="true" tabindex="-1"></a>                    _, topE <span class="op">=</span> stack.pop()</span>
+<span id="cb10-23"><a href="#cb10-23" aria-hidden="true" tabindex="-1"></a>                    E <span class="op">=</span> <span class="bu">max</span>(E, topE)</span>
+<span id="cb10-24"><a href="#cb10-24" aria-hidden="true" tabindex="-1"></a>                </span>
+<span id="cb10-25"><a href="#cb10-25" aria-hidden="true" tabindex="-1"></a>                <span class="co"># If there is still a base pair on the stack, </span></span>
+<span id="cb10-26"><a href="#cb10-26" aria-hidden="true" tabindex="-1"></a>                <span class="co"># update its end-point to the furthest point reached (E)</span></span>
+<span id="cb10-27"><a href="#cb10-27" aria-hidden="true" tabindex="-1"></a>                <span class="cf">if</span> stack:</span>
+<span id="cb10-28"><a href="#cb10-28" aria-hidden="true" tabindex="-1"></a>                    stack[<span class="op">-</span><span class="dv">1</span>][<span class="dv">1</span>] <span class="op">=</span> <span class="bu">max</span>(E, stack[<span class="op">-</span><span class="dv">1</span>][<span class="dv">1</span>])</span>
+<span id="cb10-29"><a href="#cb10-29" aria-hidden="true" tabindex="-1"></a>            </span>
+<span id="cb10-30"><a href="#cb10-30" aria-hidden="true" tabindex="-1"></a>            <span class="co"># Case 3: Check if the current nucleotide closes the region on top of stack</span></span>
+<span id="cb10-31"><a href="#cb10-31" aria-hidden="true" tabindex="-1"></a>            <span class="cf">if</span> stack <span class="kw">and</span> i <span class="op">==</span> stack[<span class="op">-</span><span class="dv">1</span>][<span class="dv">1</span>]:</span>
+<span id="cb10-32"><a href="#cb10-32" aria-hidden="true" tabindex="-1"></a>                idx, jdx <span class="op">=</span> stack.pop()</span>
+<span id="cb10-33"><a href="#cb10-33" aria-hidden="true" tabindex="-1"></a>                tree.add(idx, jdx)</span>
+<span id="cb10-34"><a href="#cb10-34" aria-hidden="true" tabindex="-1"></a>                </span>
+<span id="cb10-35"><a href="#cb10-35" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> tree</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div id="d01dfedf" class="cell" data-execution_count="9">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb11"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>turnip_virus_structure <span class="op">=</span> <span class="st">"(((((.......)))))(((....[[[[[)))...]]]]]...."</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>test_tree <span class="op">=</span> BuildClosedRegionsTree(turnip_virus_structure)</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"Turnip Virus Tree:"</span>)</span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>test_tree.display()</span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"</span><span class="ch">\n\n</span><span class="st">"</span>)</span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>another_example <span class="op">=</span> <span class="st">"(((((.(..((((........)))).(((((.......))))).....(((((.......)))))).)))))...."</span></span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a>test_tree2 <span class="op">=</span> BuildClosedRegionsTree(another_example)</span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"Tree:"</span>)</span>
+<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a>test_tree2.display()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Turnip Virus Tree:
+[-1, 44]
+├── [0, 16]
+│   └── [1, 15]
+│       └── [2, 14]
+│           └── [3, 13]
+│               └── [4, 12]
+└── [17, 39]
+
+
+
+Tree:
+[-1, 76]
+└── [0, 71]
+    └── [1, 70]
+        └── [2, 69]
+            └── [3, 68]
+                └── [4, 67]
+                    └── [6, 65]
+                        ├── [48, 64]
+                        │   └── [49, 63]
+                        │       └── [50, 62]
+                        │           └── [51, 61]
+                        │               └── [52, 60]
+                        ├── [26, 42]
+                        │   └── [27, 41]
+                        │       └── [28, 40]
+                        │           └── [29, 39]
+                        │               └── [30, 38]
+                        └── [9, 24]
+                            └── [10, 23]
+                                └── [11, 22]
+                                    └── [12, 21]</code></pre>
+</div>
+</div>
+<div id="81449917" class="cell" data-execution_count="10">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb13"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> matplotlib.pyplot <span class="im">as</span> plt</span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> matplotlib.patches <span class="im">as</span> mpatches</span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> matplotlib.patches <span class="im">import</span> Arc</span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>_NT_COLORS <span class="op">=</span> {<span class="st">'A'</span>: <span class="st">'#E63946'</span>, <span class="st">'U'</span>: <span class="st">'#2A9D8F'</span>, <span class="st">'G'</span>: <span class="st">'#E9C46A'</span>, <span class="st">'C'</span>: <span class="st">'#457B9D'</span>}</span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> plot_rna_arc(</span>
+<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a>    sequence: <span class="bu">str</span>,</span>
+<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a>    pair_table: <span class="bu">list</span>[<span class="bu">int</span>],</span>
+<span id="cb13-12"><a href="#cb13-12" aria-hidden="true" tabindex="-1"></a>    <span class="op">*</span>,</span>
+<span id="cb13-13"><a href="#cb13-13" aria-hidden="true" tabindex="-1"></a>    title: <span class="bu">str</span> <span class="op">=</span> <span class="st">"RNA Secondary Structure"</span>,</span>
+<span id="cb13-14"><a href="#cb13-14" aria-hidden="true" tabindex="-1"></a>    figsize: <span class="bu">tuple</span>[<span class="bu">float</span>, <span class="bu">float</span>] <span class="op">=</span> (<span class="dv">14</span>, <span class="dv">5</span>),</span>
+<span id="cb13-15"><a href="#cb13-15" aria-hidden="true" tabindex="-1"></a>    save_path: <span class="bu">str</span> <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> <span class="va">None</span>,</span>
+<span id="cb13-16"><a href="#cb13-16" aria-hidden="true" tabindex="-1"></a>):</span>
+<span id="cb13-17"><a href="#cb13-17" aria-hidden="true" tabindex="-1"></a>    n <span class="op">=</span> <span class="bu">len</span>(pair_table)</span>
+<span id="cb13-18"><a href="#cb13-18" aria-hidden="true" tabindex="-1"></a>    fig, ax <span class="op">=</span> plt.subplots(figsize<span class="op">=</span>figsize)</span>
+<span id="cb13-19"><a href="#cb13-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-20"><a href="#cb13-20" aria-hidden="true" tabindex="-1"></a>    <span class="co"># ── backbone line ────────────────────────────────────────────────────────</span></span>
+<span id="cb13-21"><a href="#cb13-21" aria-hidden="true" tabindex="-1"></a>    ax.plot([<span class="dv">0</span>, n <span class="op">-</span> <span class="dv">1</span>], [<span class="dv">0</span>, <span class="dv">0</span>], color<span class="op">=</span><span class="st">"#444444"</span>, lw<span class="op">=</span><span class="fl">1.5</span>, zorder<span class="op">=</span><span class="dv">1</span>)</span>
+<span id="cb13-22"><a href="#cb13-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-23"><a href="#cb13-23" aria-hidden="true" tabindex="-1"></a>    <span class="co"># ── arcs for base pairs ──────────────────────────────────────────────────</span></span>
+<span id="cb13-24"><a href="#cb13-24" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(n):</span>
+<span id="cb13-25"><a href="#cb13-25" aria-hidden="true" tabindex="-1"></a>        j <span class="op">=</span> pair_table[i]</span>
+<span id="cb13-26"><a href="#cb13-26" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> j <span class="kw">is</span> <span class="kw">not</span> <span class="va">None</span> <span class="kw">and</span> j <span class="op">&gt;</span> i:                            <span class="co"># j == -1 means unpaired</span></span>
+<span id="cb13-27"><a href="#cb13-27" aria-hidden="true" tabindex="-1"></a>            center_x <span class="op">=</span> (i <span class="op">+</span> j) <span class="op">/</span> <span class="dv">2</span></span>
+<span id="cb13-28"><a href="#cb13-28" aria-hidden="true" tabindex="-1"></a>            diameter  <span class="op">=</span> j <span class="op">-</span> i</span>
+<span id="cb13-29"><a href="#cb13-29" aria-hidden="true" tabindex="-1"></a>            arc <span class="op">=</span> Arc(</span>
+<span id="cb13-30"><a href="#cb13-30" aria-hidden="true" tabindex="-1"></a>                xy<span class="op">=</span>(center_x, <span class="dv">0</span>),</span>
+<span id="cb13-31"><a href="#cb13-31" aria-hidden="true" tabindex="-1"></a>                width<span class="op">=</span>diameter,</span>
+<span id="cb13-32"><a href="#cb13-32" aria-hidden="true" tabindex="-1"></a>                height<span class="op">=</span>diameter,</span>
+<span id="cb13-33"><a href="#cb13-33" aria-hidden="true" tabindex="-1"></a>                angle<span class="op">=</span><span class="dv">0</span>,</span>
+<span id="cb13-34"><a href="#cb13-34" aria-hidden="true" tabindex="-1"></a>                theta1<span class="op">=</span><span class="dv">0</span>,</span>
+<span id="cb13-35"><a href="#cb13-35" aria-hidden="true" tabindex="-1"></a>                theta2<span class="op">=</span><span class="dv">180</span>,</span>
+<span id="cb13-36"><a href="#cb13-36" aria-hidden="true" tabindex="-1"></a>                color<span class="op">=</span><span class="st">"#264653"</span>,</span>
+<span id="cb13-37"><a href="#cb13-37" aria-hidden="true" tabindex="-1"></a>                lw<span class="op">=</span><span class="fl">1.2</span>,</span>
+<span id="cb13-38"><a href="#cb13-38" aria-hidden="true" tabindex="-1"></a>                zorder<span class="op">=</span><span class="dv">2</span>,</span>
+<span id="cb13-39"><a href="#cb13-39" aria-hidden="true" tabindex="-1"></a>            )</span>
+<span id="cb13-40"><a href="#cb13-40" aria-hidden="true" tabindex="-1"></a>            ax.add_patch(arc)</span>
+<span id="cb13-41"><a href="#cb13-41" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-42"><a href="#cb13-42" aria-hidden="true" tabindex="-1"></a>    <span class="co"># ── nucleotide nodes ─────────────────────────────────────────────────────</span></span>
+<span id="cb13-43"><a href="#cb13-43" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> i, nt <span class="kw">in</span> <span class="bu">enumerate</span>(sequence):</span>
+<span id="cb13-44"><a href="#cb13-44" aria-hidden="true" tabindex="-1"></a>        color <span class="op">=</span> _NT_COLORS.get(nt.upper(), <span class="st">"#AAAAAA"</span>)</span>
+<span id="cb13-45"><a href="#cb13-45" aria-hidden="true" tabindex="-1"></a>        ax.scatter(i, <span class="dv">0</span>, color<span class="op">=</span>color, s<span class="op">=</span><span class="dv">120</span>, zorder<span class="op">=</span><span class="dv">3</span>)</span>
+<span id="cb13-46"><a href="#cb13-46" aria-hidden="true" tabindex="-1"></a>        ax.text(i, <span class="op">-</span><span class="fl">0.6</span>, nt, ha<span class="op">=</span><span class="st">'center'</span>, va<span class="op">=</span><span class="st">'top'</span>, fontsize<span class="op">=</span><span class="dv">7</span>, color<span class="op">=</span>color)</span>
+<span id="cb13-47"><a href="#cb13-47" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-48"><a href="#cb13-48" aria-hidden="true" tabindex="-1"></a>    <span class="co"># ── cosmetics ────────────────────────────────────────────────────────────</span></span>
+<span id="cb13-49"><a href="#cb13-49" aria-hidden="true" tabindex="-1"></a>    legend_handles <span class="op">=</span> [</span>
+<span id="cb13-50"><a href="#cb13-50" aria-hidden="true" tabindex="-1"></a>        mpatches.Patch(color<span class="op">=</span>col, label<span class="op">=</span>nt)</span>
+<span id="cb13-51"><a href="#cb13-51" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> nt, col <span class="kw">in</span> _NT_COLORS.items()</span>
+<span id="cb13-52"><a href="#cb13-52" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> nt <span class="kw">in</span> sequence.upper()</span>
+<span id="cb13-53"><a href="#cb13-53" aria-hidden="true" tabindex="-1"></a>    ]</span>
+<span id="cb13-54"><a href="#cb13-54" aria-hidden="true" tabindex="-1"></a>    ax.legend(handles<span class="op">=</span>legend_handles, loc<span class="op">=</span><span class="st">'upper right'</span>, framealpha<span class="op">=</span><span class="fl">0.9</span>)</span>
+<span id="cb13-55"><a href="#cb13-55" aria-hidden="true" tabindex="-1"></a>    ax.set_title(title, fontweight<span class="op">=</span><span class="st">'bold'</span>, pad<span class="op">=</span><span class="dv">10</span>)</span>
+<span id="cb13-56"><a href="#cb13-56" aria-hidden="true" tabindex="-1"></a>    ax.set_xlim(<span class="op">-</span><span class="dv">1</span>, n)</span>
+<span id="cb13-57"><a href="#cb13-57" aria-hidden="true" tabindex="-1"></a>    ax.set_ylim(<span class="op">-</span><span class="fl">1.5</span>, n <span class="op">/</span> <span class="dv">2</span>)</span>
+<span id="cb13-58"><a href="#cb13-58" aria-hidden="true" tabindex="-1"></a>    ax.axis(<span class="st">'off'</span>)</span>
+<span id="cb13-59"><a href="#cb13-59" aria-hidden="true" tabindex="-1"></a>    fig.tight_layout()</span>
+<span id="cb13-60"><a href="#cb13-60" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-61"><a href="#cb13-61" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> save_path:</span>
+<span id="cb13-62"><a href="#cb13-62" aria-hidden="true" tabindex="-1"></a>        fig.savefig(save_path, dpi<span class="op">=</span><span class="dv">150</span>, bbox_inches<span class="op">=</span><span class="st">'tight'</span>)</span>
+<span id="cb13-63"><a href="#cb13-63" aria-hidden="true" tabindex="-1"></a>    plt.show()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div id="613947a1" class="cell" data-execution_count="11">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb14"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>turnip_virus_seq <span class="op">=</span> <span class="st">"GGGAGCUCAACUCUCCCCCCCUUUUCCGAGGGUCAUCGGAACCA"</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>turnip_virus_edb <span class="op">=</span> <span class="st">"(((((.......)))))(((....[[[[[)))...]]]]]...."</span></span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>turnip_virus_pt <span class="op">=</span> dot_bracket_to_pairtable(turnip_virus_edb)</span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>plot_rna_arc(turnip_virus_seq, turnip_virus_pt, title<span class="op">=</span> <span class="st">'Turnip yellow mosaic virus - arc'</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="parsing-secondary_structure_files/figure-html/cell-12-output-1.png" width="1334" height="470" class="figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>This is a Shinylive application embedded in a Quarto doc.</p>
+<pre class="shinylive-python" data-engine="python"><code>#| '!! shinylive warning !!': |
+#|   shinylive does not work in self-contained HTML documents.
+#|   Please set `embed-resources: false` in your metadata.
+#| standalone: true
+#| viewerHeight: 620
+
+from shiny import App, ui, render, reactive
+import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
+from matplotlib.patches import FancyBboxPatch, Arc
+from dataclasses import dataclass, field
+from typing import Optional
+
+# ── Your existing code ────────────────────────────────────────────────────────
+
+@dataclass
+class Node:
+    i: int
+    j: int
+    children: list = field(default_factory=list)
+    pending: bool = False
+
+    def add_child(self, child):
+        self.children.append(child)
+
+    def __iter__(self):
+        for child in self.children:
+            yield from child
+        yield self
+
+
+class Tree:
+    def __init__(self, n: int):
+        self.root = Node(0, n + 1)
+
+    def _last_child(self):
+        return self.root.children[-1] if self.root.children else None
+
+    def add(self, i: int, j: int):
+        node = Node(i, j)
+        current = self._last_child()
+        ab = current if current is not None else Node(0, 0)
+        while ab.i &gt; i:
+            node.children.insert(0, self.root.children.pop())
+            current = self._last_child()
+            ab = current if current is not None else Node(0, 0)
+        self.root.children.append(node)
+
+    def postfix(self):
+        return list(self.root)
+
+
+def dot_bracket_to_pairtable(structure: str) -&gt; list:
+    OPEN_TO_KIND = {
+        "(": "round", "[": "square", "{": "curly", "&lt;": "angle",
+        **{ch: ch.lower() for ch in "ABCDEFGHIJ"},
+    }
+    CLOSE_TO_KIND = {
+        ")": "round", "]": "square", "}": "curly", "&gt;": "angle",
+        **{ch: ch.lower() for ch in "abcdefghij"},
+    }
+    UNPAIRED = set(".-~_,:")
+    stacks: dict = {}
+    table = [None] * len(structure)
+    for i, ch in enumerate(structure):
+        if ch in UNPAIRED:
+            continue
+        elif ch in OPEN_TO_KIND:
+            kind = OPEN_TO_KIND[ch]
+            stacks.setdefault(kind, []).append(i)
+        elif ch in CLOSE_TO_KIND:
+            kind = CLOSE_TO_KIND[ch]
+            stack = stacks.setdefault(kind, [])
+            if not stack:
+                raise ValueError(f"Unmatched closing bracket {ch!r} at position {i}")
+            j = stack.pop()
+            table[i] = j; table[j] = i
+        else:
+            raise ValueError(f"Invalid token {ch!r} at position {i}")
+    for kind, stack in stacks.items():
+        if stack:
+            raise ValueError(f"Unmatched opening bracket of kind '{kind}' at position {stack[0]}")
+    return table
+
+
+def BuildClosedRegionsTree(structure: str) -&gt; Tree:
+    n = len(structure)
+    pt = dot_bracket_to_pairtable(structure)
+    tree = Tree(n)
+    stack = []
+    for i, char in enumerate(structure):
+        if pt[i] is not None:
+            if i &lt; pt[i]:
+                stack.append([i, pt[i]])
+            elif pt[i] &lt; i:
+                E = i
+                while stack and stack[-1][1] &gt; i and stack[-1][0] &gt; pt[i]:
+                    E = max(E, stack.pop()[1])
+                if stack:
+                    stack[-1][1] = max(E, stack[-1][1])
+            if stack and i == stack[-1][1]:
+                idx, jdx = stack.pop()
+                tree.add(idx, jdx)
+    return tree
+
+
+# ── Step recording ────────────────────────────────────────────────────────────
+
+@dataclass
+class Step:
+    desc:      str
+    tree:      Node
+    highlight: Optional[tuple]
+    phase:     str
+    position:  int   # which base i we are currently at
+
+
+def _clone(n: Node) -&gt; Node:
+    return Node(n.i, n.j, [_clone(c) for c in n.children], n.pending)
+
+
+def build_steps(s: str) -&gt; list[Step]:
+    final_tree = BuildClosedRegionsTree(s)
+    regions = [(node.i, node.j) for node in final_tree.postfix()[:-1]]
+
+    n    = len(s)
+    root = Node(0, n + 1)
+    steps: list[Step] = []
+
+    steps.append(Step(
+        desc=f"Sentinel root [0, {n+1}] created.",
+        tree=_clone(root), highlight=None, phase='init', position=0
+    ))
+
+    for ri, rj in regions:
+        steps.append(Step(
+            desc=f"Next region [{ri}, {rj}] — checking root's rightmost child.",
+            tree=_clone(root), highlight=(ri, rj), phase='start', position=ri
+        ))
+
+        node = Node(ri, rj, pending=True)
+        ab   = root.children[-1] if root.children else Node(0, 0)
+
+        while ab.i &gt; ri:
+            stolen = root.children.pop()
+            node.children.insert(0, _clone(stolen))
+            snap = _clone(root)
+            snap.children.append(_clone(node))
+            steps.append(Step(
+                desc=f"Left border {stolen.i} &gt; {ri} → re-parent [{stolen.i}, {stolen.j}] under [{ri}, {rj}]",
+                tree=snap, highlight=(ri, rj), phase='steal', position=ri
+            ))
+            ab = root.children[-1] if root.children else Node(0, 0)
+
+        node.pending = False
+        root.children.append(node)
+        steps.append(Step(
+            desc=f"[{ri}, {rj}] attached as child of root.",
+            tree=_clone(root), highlight=(ri, rj), phase='attach', position=rj
+        ))
+
+    steps.append(Step(
+        desc='Tree construction complete.',
+        tree=_clone(root), highlight=None, phase='done', position=n - 1
+    ))
+    return steps
+
+
+# ── Drawing helpers ───────────────────────────────────────────────────────────
+
+_CHAR_COLOR = {
+    '(':  '#3B8ADD', ')': '#3B8ADD',
+    '[':  '#1D9E75', ']': '#1D9E75',
+    '{':  '#EF9F27', '}': '#EF9F27',
+    '&lt;':  '#D85A30', '&gt;': '#D85A30',
+}
+_PHASE_COLOR = {
+    'init': '#888888', 'start': '#EF9F27',
+    'steal': '#D85A30', 'attach': '#1D9E75', 'done': '#7F77DD',
+}
+
+
+def _layout(root: Node) -&gt; int:
+    counter = [0]
+    def leaves(n):
+        if not n.children:
+            n._cx = counter[0] + 0.5; counter[0] += 1
+        else:
+            for c in n.children: leaves(c)
+            n._cx = (n.children[0]._cx + n.children[-1]._cx) / 2
+    def depth(n, d=0):
+        n._d = d
+        for c in n.children: depth(c, d + 1)
+    leaves(root); depth(root)
+    return counter[0]
+
+
+def _nxy(n, total, W=10.0, lh=1.5):
+    pad = 0.6
+    return pad + n._cx * (W - 2 * pad) / max(total, 1), -n._d * lh
+
+
+def draw_step(s, steps, idx):
+    step = steps[idx]
+    pt   = dot_bracket_to_pairtable(s)
+
+    fig = plt.figure(figsize=(11, 6), facecolor='white')
+    gs  = fig.add_gridspec(2, 1, height_ratios=[1, 4], hspace=0.35)
+    ax_s = fig.add_subplot(gs[0])
+    ax_t = fig.add_subplot(gs[1])
+
+    # ── structure string ──────────────────────────────────────────────────────
+    ax_s.set_xlim(0, len(s)); ax_s.set_ylim(0, 2); ax_s.axis('off')
+
+    # current position cursor
+    pos = step.position
+    ax_s.axvline(x=pos + 0.5, color='#BBBBBB', lw=1, linestyle=':')
+
+    if step.highlight:
+        hi, hj = step.highlight
+        ax_s.add_patch(mpatches.FancyBboxPatch(
+            (hi + 0.05, 0.25), hj - hi + 0.9, 1.2,
+            boxstyle="round,pad=0.05",
+            facecolor='#FFF3CD', edgecolor='#EF9F27', lw=1.5, zorder=0
+        ))
+        ax_s.add_patch(Arc(
+            ((hi + hj + 1) / 2, 0.3), hj - hi, 0.8,
+            angle=0, theta1=0, theta2=180,
+            color='#EF9F27', lw=1.5, linestyle='--'
+        ))
+
+    for i, c in enumerate(s):
+        paired = pt[i] is not None
+        color  = _CHAR_COLOR.get(c, '#7F77DD' if c in 'ABCDEFGHIJabcdefghij' else '#BBBBBB')
+        weight = 'bold' if paired else 'normal'
+        ax_s.text(i + 0.5, 0.85, c,
+                  ha='center', va='center', fontsize=8.5,
+                  family='monospace', color=color if paired else '#CCCCCC',
+                  fontweight=weight, zorder=1)
+        if i % 5 == 0:
+            ax_s.text(i + 0.5, 1.8, str(i),
+                      ha='center', va='center', fontsize=6, color='#AAAAAA')
+
+    ax_s.axvline(x=0, color=_PHASE_COLOR.get(step.phase, '#888'), lw=5)
+    ax_s.set_title(
+        f"Step {idx + 1} / {len(steps)}  ·  [{step.phase}]  ·  {step.desc}",
+        fontsize=8.5, loc='left', color='#444', pad=3
+    )
+
+    # ── tree ──────────────────────────────────────────────────────────────────
+    ax_t.axis('off')
+    tree  = step.tree
+    total = _layout(tree)
+
+    max_d = [0]
+    def _md(n): max_d[0] = max(max_d[0], n._d); [_md(c) for c in n.children]
+    _md(tree)
+
+    W = 10.0; lh = 1.5
+    ax_t.set_xlim(-0.3, W + 0.3)
+    ax_t.set_ylim(-max_d[0] * lh - 0.8, 0.6)
+
+    def draw_edges(n):
+        px, py = _nxy(n, total, W, lh)
+        for c in n.children:
+            cx, cy = _nxy(c, total, W, lh)
+            ax_t.plot([px, cx], [py, cy],
+                      color='#EF9F27' if c.pending else '#DDDDDD',
+                      lw=1.2, linestyle='--' if c.pending else '-', zorder=1)
+            draw_edges(c)
+
+    def draw_nodes(n):
+        x, y    = _nxy(n, total, W, lh)
+        is_root = n._d == 0
+        is_hl   = step.highlight and n.i == step.highlight[0] and n.j == step.highlight[1]
+        if is_root:
+            face, edge, tc = '#F0F0F0', '#AAAAAA', '#666666'
+        elif n.pending:
+            face, edge, tc = '#FAC775', '#BA7517', '#412402'
+        elif is_hl:
+            face, edge, tc = '#5DCAA5', '#0F6E56', '#04342C'
+        else:
+            face, edge, tc = '#9FE1CB', '#1D9E75', '#04342C'
+        ax_t.add_patch(FancyBboxPatch(
+            (x - 0.46, y - 0.27), 0.92, 0.54,
+            boxstyle="round,pad=0.06",
+            facecolor=face, edgecolor=edge,
+            lw=1.5 if (is_hl or n.pending) else 0.8,
+            linestyle='--' if n.pending else '-', zorder=2
+        ))
+        ax_t.text(x, y, f"[{n.i}, {n.j}]",
+                  ha='center', va='center', fontsize=7.5,
+                  family='monospace', color=tc, fontweight='bold', zorder=3)
+        for c in n.children: draw_nodes(c)
+
+    draw_edges(tree)
+    draw_nodes(tree)
+    return fig
+
+
+# ── Shiny app ─────────────────────────────────────────────────────────────────
+
+DEFAULT = "(((((.......)))))(((....[[[[[)))...]]]]]...."
+_steps  = build_steps(DEFAULT)
+
+app_ui = ui.page_fluid(
+    ui.h4("Closed region tree builder", style="margin-bottom:4px"),
+    ui.input_text("structure", "Dot-bracket structure", value=DEFAULT, width="100%"),
+    ui.input_action_button("load", "Load", class_="btn-sm"),
+    ui.hr(),
+    ui.input_slider("step", "Step", min=0, max=len(_steps) - 1, value=0,
+                    step=1, width="100%", animate=ui.AnimationOptions(interval=700)),
+    ui.output_plot("tree_plot", height="520px"),
+)
+
+def server(input, output, session):
+    steps = reactive.value(_steps)
+
+    @reactive.effect
+    @reactive.event(input.load)
+    def _reload():
+        s = input.structure().strip()
+        try:
+            new_steps = build_steps(s)
+            steps.set(new_steps)
+            ui.update_slider("step", min=0, max=len(new_steps) - 1, value=0)
+        except ValueError as e:
+            ui.notification_show(str(e), type="error")
+
+    @output
+    @render.plot
+    def tree_plot():
+        s   = input.structure().strip()
+        idx = input.step()
+        st  = steps.get()
+        idx = min(idx, len(st) - 1)
+        return draw_step(s, st, idx)
+
+app = App(app_ui, server)</code></pre>
+</section>
+<section id="new-test-of-visual" class="level1">
+<h1>new test of visual</h1>
+<pre class="shinylive-python" data-engine="python"><code>#| '!! shinylive warning !!': |
+#|   shinylive does not work in self-contained HTML documents.
+#|   Please set `embed-resources: false` in your metadata.
+#| standalone: true
+#| viewerHeight: 700
+
+from __future__ import annotations
+import copy, io, os
+from dataclasses import dataclass, field
+from typing import Optional
+
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
+from matplotlib.patches import FancyBboxPatch, Arc
+
+from shiny import App, ui, render, reactive
+
+# ── Data structures ────────────────────────────────────────────────────────────
+
+@dataclass
+class Node:
+    i: int
+    j: int
+    children: list = field(default_factory=list)
+
+@dataclass
+class Step:
+    desc:      str
+    phase:     str
+    position:  int
+    highlight: Optional[tuple]
+    stack:     list
+    tree:      list
+
+# ── Pair-table ─────────────────────────────────────────────────────────────────
+
+def dot_bracket_to_pairtable(structure: str) -&gt; list:
+    OPEN = {"(": "r", "[": "s", "{": "c", "&lt;": "a",
+            **{ch: ch.lower() for ch in "ABCDEFGHIJ"}}
+    CLOSE = {")": "r", "]": "s", "}": "c", "&gt;": "a",
+             **{ch: ch.lower() for ch in "abcdefghij"}}
+    UNPAIRED = set(".")
+    stacks: dict = {}
+    table = [None] * len(structure)
+    for i, ch in enumerate(structure):
+        if ch in UNPAIRED:
+            continue
+        elif ch in OPEN:
+            stacks.setdefault(OPEN[ch], []).append(i)
+        elif ch in CLOSE:
+            kind = CLOSE[ch]
+            s = stacks.setdefault(kind, [])
+            if not s:
+                raise ValueError(f"Unmatched closing bracket {ch!r} at pos {i}")
+            j = s.pop()
+            table[i] = j
+            table[j] = i
+        else:
+            raise ValueError(f"Invalid token {ch!r} at pos {i}")
+    for kind, s in stacks.items():
+        if s:
+            raise ValueError(f"Unmatched opening bracket kind={kind!r} at pos {s[0]}")
+    return table
+
+# ── Step recorder ──────────────────────────────────────────────────────────────
+
+def _clone(nodes: list) -&gt; list:
+    return [Node(n.i, n.j, _clone(n.children)) for n in nodes]
+
+def build_steps(structure: str) -&gt; list[Step]:
+    pt    = dot_bracket_to_pairtable(structure)
+    n     = len(structure)
+    roots: list[Node] = []
+    stack: list[list] = []
+    steps: list[Step] = []
+
+    def snap(desc, phase, pos, hl=None):
+        steps.append(Step(
+            desc=desc, phase=phase, position=pos, highlight=hl,
+            stack=copy.deepcopy(stack),
+            tree=_clone(roots),
+        ))
+
+    snap(f"Initialise. Sentinel root spans [0, {n + 1}].", "init", 0)
+
+    for i, char in enumerate(structure):
+        if pt[i] is None:
+            continue
+        if i &lt; pt[i]:
+            stack.append([i, pt[i]])
+            snap(f"Position {i} '{char}':  push [{i}, {pt[i]}] → stack depth {len(stack)}.",
+                 "push", i, (i, pt[i]))
+        elif pt[i] &lt; i:
+            E = i
+            merged = []
+            while stack and stack[-1][1] &gt; i and stack[-1][0] &gt; pt[i]:
+                popped = stack.pop()
+                E = max(E, popped[1])
+                merged.append(popped)
+            if merged:
+                snap(f"Position {i} '{char}':  pseudoknot — merged {merged}, E={E}.",
+                     "merge", i, (pt[i], i))
+            if stack:
+                old_j = stack[-1][1]
+                stack[-1][1] = max(E, old_j)
+                if stack[-1][1] != old_j:
+                    snap(f"Extended stack top [{stack[-1][0]}, {old_j}] → [{stack[-1][0]}, {stack[-1][1]}].",
+                         "merge", i, (stack[-1][0], stack[-1][1]))
+        if stack and i == stack[-1][1]:
+            ri, rj = stack.pop()
+            node = Node(ri, rj)
+            stolen = []
+            while roots and roots[-1].i &gt; ri:
+                stolen.insert(0, roots.pop())
+                node.children.insert(0, stolen[0])
+            roots.append(node)
+            if stolen:
+                snap(f"Re-parented {[(c.i, c.j) for c in stolen]} under [{ri}, {rj}].",
+                     "attach", i, (ri, rj))
+            snap(f"Region [{ri}, {rj}] closed and appended to root's children.",
+                 "attach", i, (ri, rj))
+
+    snap("Tree construction complete.", "done", n - 1)
+    return steps
+
+# ── Colors ─────────────────────────────────────────────────────────────────────
+
+_PHASE_COLOR = {
+    "init":  "#888888", "push":  "#3B8ADD",
+    "merge": "#D85A30", "attach":"#1D9E75", "done": "#7F77DD",
+}
+_BRACKET_COLOR = {
+    "(": "#3B8ADD", ")": "#3B8ADD",
+    "[": "#1D9E75", "]": "#1D9E75",
+    "{": "#EF9F27", "}": "#EF9F27",
+    "&lt;": "#D85A30", "&gt;": "#D85A30",
+}
+
+# ── Sequence panel ─────────────────────────────────────────────────────────────
+
+def _draw_sequence(ax, structure, pt, step):
+    n      = len(structure)
+    CHAR_Y = 0.55
+    ax.set_xlim(0, n); ax.set_ylim(-0.25, 2.0); ax.axis("off")
+
+    for i in range(n):
+        if pt[i] is not None and i &lt; pt[i]:
+            j = pt[i]; span = j - i; cx = (i + j + 1) / 2
+            arc_h = min(1.2, span * 0.055 + 0.12)
+            is_hl = step.highlight and (i, j) == tuple(step.highlight)
+            ax.add_patch(Arc((cx, CHAR_Y), width=span, height=arc_h * 2,
+                             angle=0, theta1=0, theta2=180,
+                             color="#EF9F27" if is_hl else "#DDDDDD",
+                             lw=1.6 if is_hl else 0.7,
+                             linestyle="--" if is_hl else "-", zorder=1))
+
+    if step.highlight:
+        hi, hj = step.highlight
+        ax.add_patch(mpatches.FancyBboxPatch(
+            (hi + 0.05, CHAR_Y - 0.22), hj - hi + 0.9, 0.44,
+            boxstyle="round,pad=0.04",
+            facecolor="#FFF3CD", edgecolor="#EF9F27", lw=1.2, zorder=0))
+
+    ax.axvline(x=step.position + 0.5, color="#CCCCCC", lw=0.8, linestyle=":")
+    fs = max(6, min(10, int(450 / n)))
+    for i, c in enumerate(structure):
+        paired = pt[i] is not None
+        color  = _BRACKET_COLOR.get(c, "#CCCCCC") if paired else "#CCCCCC"
+        ax.text(i + 0.5, CHAR_Y, c, ha="center", va="center",
+                fontsize=fs, family="monospace",
+                color=color, fontweight="bold" if paired else "normal", zorder=2)
+        if n &lt;= 80 and i % 5 == 0:
+            ax.text(i + 0.5, CHAR_Y - 0.2, str(i),
+                    ha="center", va="top", fontsize=5.5, color="#BBBBBB")
+
+    ax.axvline(x=0, color=_PHASE_COLOR.get(step.phase, "#888"), lw=5)
+    ax.set_title(f"[{step.phase}]  {step.desc}", fontsize=8.5, loc="left", color="#333", pad=3)
+
+# ── Stack panel ────────────────────────────────────────────────────────────────
+
+def _draw_stack(ax, step):
+    ax.axis("off"); ax.set_xlim(0, 1); ax.set_ylim(0, 1)
+    ax.set_title("Algorithm stack", fontsize=9, color="#555", pad=4)
+    stack = step.stack
+    if not stack:
+        ax.text(0.5, 0.5, "empty", ha="center", va="center",
+                fontsize=10, color="#AAAAAA", style="italic", family="monospace")
+        return
+    MAX = 12; visible = stack[-MAX:]; nv = len(visible)
+    item_h = min(0.088, 0.82 / max(nv, 1)); gap = 0.012; top_y = 0.95
+    for k, (si, sj) in enumerate(reversed(visible)):
+        is_top = (k == 0)
+        y      = top_y - k * (item_h + gap)
+        face   = "#5DCAA5" if is_top else ("#9FE1CB" if k % 2 == 0 else "#BCEAD5")
+        edge   = "#0F6E56" if is_top else "#1D9E75"
+        ax.add_patch(FancyBboxPatch(
+            (0.08, y - item_h * 0.9), 0.84, item_h * 0.86,
+            boxstyle="round,pad=0.005",
+            facecolor=face, edgecolor=edge,
+            lw=1.5 if is_top else 0.7, zorder=2))
+        fs = max(6, min(9, int(90 / max(nv, 1)) + 4))
+        ax.text(0.5, y - item_h * 0.45, f"[{si},  {sj}]",
+                ha="center", va="center", fontsize=fs,
+                family="monospace", color="#04342C", fontweight="bold", zorder=3)
+    if len(stack) &gt; MAX:
+        ax.text(0.5, top_y - MAX * (item_h + gap), f"… +{len(stack) - MAX} more",
+                ha="center", va="top", fontsize=7, color="#999")
+    ax.annotate("← top", xy=(0.92, top_y - item_h * 0.45),
+                fontsize=6.5, color="#0F6E56", va="center", ha="left")
+
+# ── Tree panel ─────────────────────────────────────────────────────────────────
+
+def _layout(nodes, depth=0, counter=None):
+    if counter is None: counter = [0]
+    for node in nodes:
+        if not node.children:
+            node._cx = counter[0] + 0.5; counter[0] += 1
+        else:
+            _layout(node.children, depth + 1, counter)
+            node._cx = (node.children[0]._cx + node.children[-1]._cx) / 2
+        node._d = depth
+
+def _count_leaves(nodes):
+    c = 0
+    for n in nodes: c += _count_leaves(n.children) if n.children else 1
+    return c
+
+def _max_depth(nodes):
+    if not nodes: return 0
+    return max(max(n._d, _max_depth(n.children)) for n in nodes)
+
+def _draw_tree(ax, step, n_seq):
+    ax.axis("off")
+    ax.set_title("Closed region tree", fontsize=9, color="#555", pad=4)
+    tree      = step.tree
+    root_node = Node(0, n_seq + 1, list(tree))
+    _layout([root_node])
+    n_leaves = max(_count_leaves([root_node]), 1)
+    max_d    = max(1, _max_depth([root_node]))
+    LH = 1.3; BOX_W = 0.84; BOX_H = 0.62; FS = 8
+    ax.set_xlim(-0.5, n_leaves + 0.2)
+    ax.set_ylim(-(max_d + 0.6) * LH, 0.85)
+
+    def nxy(node): return node._cx, -node._d * LH
+
+    def draw_edges(node):
+        px, py = nxy(node)
+        for c in node.children:
+            cx, cy = nxy(c)
+            ax.plot([px, cx], [py, cy], color="#CCCCCC", lw=0.9, zorder=1)
+            draw_edges(c)
+
+    def draw_nodes(node):
+        x, y    = nxy(node)
+        is_root = (node.i == 0 and node.j == n_seq + 1)
+        is_hl   = (step.highlight is not None
+                   and node.i == step.highlight[0]
+                   and node.j == step.highlight[1])
+        if is_root:   face, edge, tc, lw = "#F0F0F0","#AAAAAA","#555555", 0.8
+        elif is_hl:   face, edge, tc, lw = "#5DCAA5","#0F6E56","#04342C", 1.5
+        else:         face, edge, tc, lw = "#9FE1CB","#1D9E75","#04342C", 0.8
+        ax.add_patch(FancyBboxPatch(
+            (x - BOX_W/2, y - BOX_H/2), BOX_W, BOX_H,
+            boxstyle="round,pad=0.04",
+            facecolor=face, edgecolor=edge, lw=lw, zorder=2))
+        label = (f"[{node.i},{node.j}]" if not is_root else f"root\n[0,{n_seq+1}]")
+        ax.text(x, y, label, ha="center", va="center", fontsize=FS,
+                family="monospace", color=tc, fontweight="bold",
+                multialignment="center", zorder=3)
+        for c in node.children: draw_nodes(c)
+
+    if not tree:
+        ax.set_xlim(-0.5, 1.2); ax.set_ylim(-0.78, 0.85)
+    draw_edges(root_node); draw_nodes(root_node)
+
+# ── draw_step ──────────────────────────────────────────────────────────────────
+
+def draw_step(structure, steps, idx, figsize=None):
+    pt   = dot_bracket_to_pairtable(structure)
+    step = steps[min(idx, len(steps) - 1)]
+    n    = len(structure)
+
+    _root_tmp = Node(0, n + 1, _clone(step.tree))
+    _layout([_root_tmp])
+    n_leaves   = max(_count_leaves([_root_tmp]), 1)
+    tree_depth = max(1, _max_depth([_root_tmp]))
+
+    if figsize is None:
+        fw = max(13.0, n_leaves * 1.2 + 4.5)
+        fh = max(7.5,  tree_depth * 1.4 + 4.0)
+        figsize = (fw, fh)
+
+    fig = plt.figure(figsize=figsize, facecolor="white")
+    gs  = fig.add_gridspec(
+        2, 2,
+        height_ratios=[1.0, max(2.8, tree_depth * 0.9)],
+        width_ratios=[1,   max(2.6, n_leaves * 0.45)],
+        hspace=0.42, wspace=0.22,
+        left=0.04, right=0.97, top=0.93, bottom=0.04,
+    )
+    ax_seq   = fig.add_subplot(gs[0, :])
+    ax_stack = fig.add_subplot(gs[1, 0])
+    ax_tree  = fig.add_subplot(gs[1, 1])
+
+    fig.text(0.98, 0.97, f"step {idx + 1} / {len(steps)}",
+             ha="right", va="top", fontsize=8, color="#AAAAAA")
+
+    _draw_sequence(ax_seq, structure, pt, step)
+    _draw_stack(ax_stack, step)
+    _draw_tree(ax_tree, step, n)
+    return fig
+
+# ── Shiny app ──────────────────────────────────────────────────────────────────
+
+DEFAULT = "(((((.......)))))(((....[[[[[)))...]]]]]...."
+_steps  = build_steps(DEFAULT)
+
+def _step_for_base(steps, base):
+    """Latest step whose position &lt;= base."""
+    idx = 0
+    for k, s in enumerate(steps):
+        if s.position &lt;= base:
+            idx = k
+    return idx
+
+app_ui = ui.page_fluid(
+    ui.h4("Closed region tree — step-through", style="margin-bottom:4px"),
+    ui.layout_columns(
+        ui.input_text("structure", None, value=DEFAULT, width="100%"),
+        ui.input_action_button("load", "Load", class_="btn-sm"),
+        col_widths=[10, 2],
+    ),
+    ui.input_slider("base", "Base position", min=0, max=len(DEFAULT) - 1,
+                    value=0, step=1, width="100%",
+                    animate=ui.AnimationOptions(interval=350)),
+    ui.download_button("save_svg", "Save current step as SVG", class_="btn-sm"),
+    ui.output_plot("tree_plot", height="560px"),
+)
+
+def server(input, output, session):
+    steps = reactive.value(_steps)
+
+    @reactive.effect
+    @reactive.event(input.load)
+    def _reload():
+        s = input.structure().strip()
+        try:
+            new_steps = build_steps(s)
+            steps.set(new_steps)
+            ui.update_slider("base", min=0, max=len(s) - 1, value=0)
+        except ValueError as e:
+            ui.notification_show(str(e), type="error")
+
+    @output
+    @render.plot
+    def tree_plot():
+        s    = input.structure().strip()
+        st   = steps.get()
+        idx  = _step_for_base(st, input.base())
+        return draw_step(s, st, idx)
+
+    @output
+    @render.download(filename=lambda: f"tree_base_{input.base():03d}.svg")
+    def save_svg():
+        s   = input.structure().strip()
+        st  = steps.get()
+        idx = _step_for_base(st, input.base())
+        fig = draw_step(s, st, idx)
+        buf = io.StringIO()
+        fig.savefig(buf, format="svg", bbox_inches="tight", facecolor="white")
+        plt.close(fig)
+        buf.seek(0)
+        yield buf.read()
+
+app = App(app_ui, server)</code></pre>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+</div> <!-- /content -->
+<footer class="footer">
+  <div class="nav-footer">
+    <div class="nav-footer-left">
+      &nbsp;
+    </div>   
+    <div class="nav-footer-center">
+<p><a href="https://github.com/jonjaeg"><img src="https://img.shields.io/badge/GitHub-181717?style=flat&amp;logo=github.png" class="img-fluid" alt="GitHub"></a> <a href="https://bsky.app/profile/jonjaeg.bsky.social"><img src="https://img.shields.io/badge/Bluesky-0285FF?style=flat&amp;logo=bluesky.png" class="img-fluid" alt="Bluesky"></a></p>
+</div>
+    <div class="nav-footer-right">
+      &nbsp;
+    </div>
+  </div>
+</footer>
+
+
+
+
+</body></html>
