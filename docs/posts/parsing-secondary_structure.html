@@ -10,7 +10,7 @@
 <meta name="dcterms.date" content="2026-04-15">
 <meta name="description" content="Simple implementation of a parsing algorithm in python.">
 
-<title>Parsing Nucleic Acid Pseudoknotted Secondary Structure:</title>
+<title>Parsing Nucleic Acid Pseudoknotted Secondary Structure: – Jonas Jäger</title>
 <style>
 /* Default styles provided by pandoc.
 ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
@@ -71,6 +71,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <script src="../site_libs/quarto-search/fuse.min.js"></script>
 <script src="../site_libs/quarto-search/quarto-search.js"></script>
 <meta name="quarto:offset" content="../">
+<link href="../images/dna-favicon.png" rel="icon" type="image/png">
 <script src="../site_libs/quarto-html/quarto.js" type="module"></script>
 <script src="../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
 <script src="../site_libs/quarto-html/popper.min.js"></script>
@@ -153,6 +154,11 @@ window.Quarto = {
   <header id="quarto-header" class="headroom fixed-top">
     <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
       <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a class="navbar-brand" href="../index.html">
+    <span class="navbar-title">Jonas Jäger</span>
+    </a>
+  </div>
             <div id="quarto-search" class="" title="Search"></div>
           <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
   <span class="navbar-toggler-icon"></span>
@@ -172,8 +178,8 @@ window.Quarto = {
 <span class="menu-text">Software</span></a>
   </li>  
   <li class="nav-item">
-    <a class="nav-link" href="../contact.html"> 
-<span class="menu-text">Contact</span></a>
+    <a class="nav-link" href="../CV.html"> 
+<span class="menu-text">CV</span></a>
   </li>  
 </ul>
           </div> <!-- /navcollapse -->
@@ -201,8 +207,14 @@ window.Quarto = {
   <li><a href="#implementation-details" id="toc-implementation-details" class="nav-link" data-scroll-target="#implementation-details">Implementation details</a></li>
   <li><a href="#example" id="toc-example" class="nav-link" data-scroll-target="#example">Example</a></li>
   </ul></li>
-  <li><a href="#identify-closed-regions" id="toc-identify-closed-regions" class="nav-link" data-scroll-target="#identify-closed-regions">Identify closed regions</a></li>
-  <li><a href="#new-test-of-visual" id="toc-new-test-of-visual" class="nav-link" data-scroll-target="#new-test-of-visual">new test of visual</a></li>
+  <li><a href="#identify-closed-regions" id="toc-identify-closed-regions" class="nav-link" data-scroll-target="#identify-closed-regions">Identify closed regions</a>
+  <ul class="collapse">
+  <li><a href="#tree-data-structure" id="toc-tree-data-structure" class="nav-link" data-scroll-target="#tree-data-structure">Tree data structure</a></li>
+  <li><a href="#tree-building-function-parsing-function" id="toc-tree-building-function-parsing-function" class="nav-link" data-scroll-target="#tree-building-function-parsing-function">Tree building function (parsing function)</a></li>
+  <li><a href="#example-tree" id="toc-example-tree" class="nav-link" data-scroll-target="#example-tree">Example Tree</a></li>
+  <li><a href="#arc-diagram" id="toc-arc-diagram" class="nav-link" data-scroll-target="#arc-diagram">arc diagram</a></li>
+  </ul></li>
+  <li><a href="#step-by-step-tree-building" id="toc-step-by-step-tree-building" class="nav-link" data-scroll-target="#step-by-step-tree-building">Step-by-step tree building</a></li>
   </ul>
 </nav>
     </div>
@@ -258,7 +270,7 @@ window.Quarto = {
 <section id="setup" class="level3">
 <h3 class="anchored" data-anchor-id="setup">Setup</h3>
 <p>First we need to make sure python is running by importing some packages.</p>
-<div id="55c935fb" class="cell" data-execution_count="1">
+<div id="02bc56a0" class="cell" data-execution_count="1">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> pandas <span class="im">as</span> pd</span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> matplotlib.pyplot <span class="im">as</span> plt</span>
@@ -276,7 +288,7 @@ window.Quarto = {
 <p>A RNA secondary structure can be shown in different ways. One common representation is the Dot-bracket notation, where each base pair is represented with a opening <code>(</code> and closing bracket <code>)</code>. Nucleotides that are unbound are displayed as simple dots <code>.</code>.</p>
 <p>This representation needs to be extended with more opening and closing characters when we want to deal with pseudoknots. There, we introduce the extended dot-bracket notation that uses these supported bracket types <code>()  []  {}  &lt;&gt;  Aa  Bb  Cc  Dd  Ee  Ff  Gg  Hh  Ii  Jj</code>.</p>
 <p>Lets see a test example:</p>
-<div id="38483c8e" class="cell" data-execution_count="2">
+<div id="49d825de" class="cell" data-execution_count="2">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>sequence <span class="op">=</span> <span class="st">"GCCCCAUGGAGGUGGCUGGGGCCAGCCUCAUGGAGGUGGCUGGGG"</span></span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>edb <span class="op">=</span> <span class="st">"...[[[[[[............((((((]]]]]]....)))))).."</span> <span class="co"># extended dot-bracket notation of RNA molecule</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
@@ -340,7 +352,7 @@ window.Quarto = {
 </div>
 </div>
 </div>
-<div id="c38be3fb" class="cell" data-execution_count="3">
+<div id="f9d0347a" class="cell" data-execution_count="3">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> dot_bracket_to_pairtable(structure: <span class="bu">str</span>) <span class="op">-&gt;</span> <span class="bu">list</span>[<span class="bu">int</span> <span class="op">|</span> <span class="va">None</span>]:</span>
 <span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""</span></span>
 <span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="co">    Convert an extended dot-bracket string to a pair table representation.</span></span>
@@ -481,7 +493,7 @@ window.Quarto = {
 </table>
 <p>So, our resulting pair table should look like this: <code>[None, None, 7, 6, None, None, 3, 2]</code>.</p>
 <p>And indeed, if we run our function this is the correct pair table.</p>
-<div id="6c0999d1" class="cell" data-execution_count="4">
+<div id="c2faba7a" class="cell" data-execution_count="4">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>example_edb <span class="op">=</span> <span class="st">"..[[..]]"</span></span>
 <span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>example_pt <span class="op">=</span> dot_bracket_to_pairtable(example_edb)</span>
 <span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(example_pt)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
@@ -493,135 +505,155 @@ window.Quarto = {
 </section>
 <section id="identify-closed-regions" class="level2">
 <h2 class="anchored" data-anchor-id="identify-closed-regions">Identify closed regions</h2>
-<p>We want to implement a parsing algorithm for closed regions of a pseudoknotted RNA secondary structure. Closed regions are defined as a region [i, j] of a seconday strucutre where no base inside this invertal points to a base outside of this interval.</p>
-<div id="1c8f8017" class="cell" data-execution_count="5">
+<p>We want to implement a parsing algorithm for closed regions of a pseudoknotted RNA secondary structure. Closed regions are defined as a region [i, j] of a seconday structure where no nucleotide <em>inside</em> this invertal base pairs with a nucleotide outside of this interval.</p>
+<section id="tree-data-structure" class="level3">
+<h3 class="anchored" data-anchor-id="tree-data-structure">Tree data structure</h3>
+<p>We define our <em>Node</em> class that consists of the two indices <em>i</em> and <em>j</em> for the opening and closing bases, as well as a list of children <em>Nodes</em>. One <em>Node</em> represents a closed region in the secondary structure.</p>
+<div class="callout callout-style-default callout-tip callout-titled" title="What is the @dataclass decorator?">
+<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-3-contents" aria-controls="callout-3" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Tip</span>What is the <span class="citation" data-cites="dataclass">@dataclass</span> decorator?
+</div>
+<div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
+</div>
+<div id="callout-3" class="callout-3-contents callout-collapse collapse">
+<div class="callout-body-container callout-body">
+<p>The python dataclasss decorator defines some useful default methods when called upon a <em>class</em>. For example, <code>__init__()</code>, or <code>__repr__()</code>, if these are not specifically defined.</p>
+<p>Here in our case: <code>__init__()</code> is created as default, but <code>__repr__()</code> is defined by us!</p>
+</div>
+</div>
+</div>
+<div id="c2bd9a37" class="cell" data-execution_count="5">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> __future__ <span class="im">import</span> annotations</span>
 <span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> dataclasses <span class="im">import</span> dataclass, field</span>
 <span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a><span class="co"># @dataclass decorator creates default methods for classes like __init__, or __repr__ if these are not specifically defined.</span></span>
-<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a><span class="co"># here: __init__ is created as default, but __repr__ is defined by us!</span></span>
-<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a><span class="at">@dataclass</span> </span>
-<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> Node:</span>
-<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>    i: <span class="bu">int</span></span>
-<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>    j: <span class="bu">int</span></span>
-<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>    children: <span class="bu">list</span>[Node] <span class="op">=</span> field(default_factory<span class="op">=</span><span class="bu">list</span>)</span>
-<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> add_child(<span class="va">self</span>, child: Node) <span class="op">-&gt;</span> <span class="va">None</span>:</span>
-<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.children.append(child)</span>
-<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> <span class="fu">__iter__</span>(<span class="va">self</span>):</span>
-<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a>        <span class="co">"""Postfix (post-order) traversal: children before parent."""</span></span>
-<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> child <span class="kw">in</span> <span class="va">self</span>.children:</span>
-<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a>            <span class="cf">yield</span> <span class="cf">from</span> child</span>
-<span id="cb7-20"><a href="#cb7-20" aria-hidden="true" tabindex="-1"></a>        <span class="cf">yield</span> <span class="va">self</span></span>
-<span id="cb7-21"><a href="#cb7-21" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-22"><a href="#cb7-22" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> <span class="fu">__repr__</span>(<span class="va">self</span>):</span>
-<span id="cb7-23"><a href="#cb7-23" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> <span class="ss">f"Node(</span><span class="sc">{</span><span class="va">self</span><span class="sc">.</span>i<span class="sc">}</span><span class="ss">, </span><span class="sc">{</span><span class="va">self</span><span class="sc">.</span>j<span class="sc">}</span><span class="ss">)"</span></span>
-<span id="cb7-24"><a href="#cb7-24" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-25"><a href="#cb7-25" aria-hidden="true" tabindex="-1"></a><span class="co"># https://mastering-python.com/blog/2023/using-post-init-with-dataclasses</span></span>
-<span id="cb7-26"><a href="#cb7-26" aria-hidden="true" tabindex="-1"></a><span class="co"># with @dataclass, we automatically init the class attributes (here: this would be n AND root), however, we import "field" to tell that we do not want root to be initalized yet!</span></span>
-<span id="cb7-27"><a href="#cb7-27" aria-hidden="true" tabindex="-1"></a><span class="co"># then we use the __post_init__ method to initalize root only AFTER __init__ (this means after initalizing n), and therefore, we initalize root</span></span>
-<span id="cb7-28"><a href="#cb7-28" aria-hidden="true" tabindex="-1"></a><span class="at">@dataclass</span></span>
-<span id="cb7-29"><a href="#cb7-29" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> ClosedRegionTree:</span>
-<span id="cb7-30"><a href="#cb7-30" aria-hidden="true" tabindex="-1"></a>    n: <span class="bu">int</span> <span class="co"># n represents the sequence length of the input structure</span></span>
-<span id="cb7-31"><a href="#cb7-31" aria-hidden="true" tabindex="-1"></a>    root: Node <span class="op">=</span> field(init<span class="op">=</span><span class="va">False</span>)</span>
-<span id="cb7-32"><a href="#cb7-32" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-33"><a href="#cb7-33" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> __post_init__(<span class="va">self</span>):</span>
-<span id="cb7-34"><a href="#cb7-34" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Sentinel root [0, n+1] as described in the procedure</span></span>
-<span id="cb7-35"><a href="#cb7-35" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.root <span class="op">=</span> Node(<span class="op">-</span><span class="dv">1</span>, <span class="va">self</span>.n)</span>
-<span id="cb7-36"><a href="#cb7-36" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-37"><a href="#cb7-37" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> _last_child(<span class="va">self</span>) <span class="op">-&gt;</span> Node <span class="op">|</span> <span class="va">None</span>:</span>
-<span id="cb7-38"><a href="#cb7-38" aria-hidden="true" tabindex="-1"></a>        <span class="co">"""Child of root with largest left border, or None if no children."""</span></span>
-<span id="cb7-39"><a href="#cb7-39" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> <span class="va">self</span>.root.children[<span class="op">-</span><span class="dv">1</span>] <span class="cf">if</span> <span class="va">self</span>.root.children <span class="cf">else</span> <span class="va">None</span></span>
-<span id="cb7-40"><a href="#cb7-40" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-41"><a href="#cb7-41" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> add(<span class="va">self</span>, i: <span class="bu">int</span>, j: <span class="bu">int</span>) <span class="op">-&gt;</span> <span class="va">None</span>:</span>
-<span id="cb7-42"><a href="#cb7-42" aria-hidden="true" tabindex="-1"></a>        <span class="co">"""Add closed region [i, j] in postfix order (procedure Add-To-Tree)."""</span></span>
-<span id="cb7-43"><a href="#cb7-43" aria-hidden="true" tabindex="-1"></a>        node <span class="op">=</span> Node(i, j)                          <span class="co"># step 1</span></span>
-<span id="cb7-44"><a href="#cb7-44" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-45"><a href="#cb7-45" aria-hidden="true" tabindex="-1"></a>        current <span class="op">=</span> <span class="va">self</span>._last_child()               <span class="co"># step 2</span></span>
-<span id="cb7-46"><a href="#cb7-46" aria-hidden="true" tabindex="-1"></a>        sentinel <span class="op">=</span> Node(<span class="dv">0</span>, <span class="dv">0</span>)</span>
-<span id="cb7-47"><a href="#cb7-47" aria-hidden="true" tabindex="-1"></a>        ab <span class="op">=</span> current <span class="cf">if</span> current <span class="kw">is</span> <span class="kw">not</span> <span class="va">None</span> <span class="cf">else</span> sentinel</span>
-<span id="cb7-48"><a href="#cb7-48" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-49"><a href="#cb7-49" aria-hidden="true" tabindex="-1"></a>        <span class="cf">while</span> ab.i <span class="op">&gt;</span> i:                            <span class="co"># step 3</span></span>
-<span id="cb7-50"><a href="#cb7-50" aria-hidden="true" tabindex="-1"></a>            node.add_child(ab)                     <span class="co"># step 4</span></span>
-<span id="cb7-51"><a href="#cb7-51" aria-hidden="true" tabindex="-1"></a>            <span class="va">self</span>.root.children.pop()</span>
-<span id="cb7-52"><a href="#cb7-52" aria-hidden="true" tabindex="-1"></a>            current <span class="op">=</span> <span class="va">self</span>._last_child()           <span class="co"># step 5</span></span>
-<span id="cb7-53"><a href="#cb7-53" aria-hidden="true" tabindex="-1"></a>            ab <span class="op">=</span> current <span class="cf">if</span> current <span class="kw">is</span> <span class="kw">not</span> <span class="va">None</span> <span class="cf">else</span> sentinel</span>
-<span id="cb7-54"><a href="#cb7-54" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-55"><a href="#cb7-55" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.root.add_child(node)                  <span class="co"># step 7</span></span>
-<span id="cb7-56"><a href="#cb7-56" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-57"><a href="#cb7-57" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> postfix(<span class="va">self</span>) <span class="op">-&gt;</span> <span class="bu">list</span>[Node]:</span>
-<span id="cb7-58"><a href="#cb7-58" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> <span class="bu">list</span>(<span class="va">self</span>.root)</span>
-<span id="cb7-59"><a href="#cb7-59" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-60"><a href="#cb7-60" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> display(<span class="va">self</span>) <span class="op">-&gt;</span> <span class="va">None</span>:</span>
-<span id="cb7-61"><a href="#cb7-61" aria-hidden="true" tabindex="-1"></a>        <span class="kw">def</span> _display(node: Node, prefix: <span class="bu">str</span> <span class="op">=</span> <span class="st">""</span>, is_last: <span class="bu">bool</span> <span class="op">=</span> <span class="va">True</span>) <span class="op">-&gt;</span> <span class="va">None</span>:</span>
-<span id="cb7-62"><a href="#cb7-62" aria-hidden="true" tabindex="-1"></a>            connector <span class="op">=</span> <span class="st">"└── "</span> <span class="cf">if</span> is_last <span class="cf">else</span> <span class="st">"├── "</span></span>
-<span id="cb7-63"><a href="#cb7-63" aria-hidden="true" tabindex="-1"></a>            <span class="bu">print</span>(prefix <span class="op">+</span> connector <span class="op">+</span> <span class="ss">f"[</span><span class="sc">{</span>node<span class="sc">.</span>i<span class="sc">}</span><span class="ss">, </span><span class="sc">{</span>node<span class="sc">.</span>j<span class="sc">}</span><span class="ss">]"</span>)</span>
-<span id="cb7-64"><a href="#cb7-64" aria-hidden="true" tabindex="-1"></a>            child_prefix <span class="op">=</span> prefix <span class="op">+</span> (<span class="st">"    "</span> <span class="cf">if</span> is_last <span class="cf">else</span> <span class="st">"│   "</span>)</span>
-<span id="cb7-65"><a href="#cb7-65" aria-hidden="true" tabindex="-1"></a>            <span class="cf">for</span> i, child <span class="kw">in</span> <span class="bu">enumerate</span>(node.children):</span>
-<span id="cb7-66"><a href="#cb7-66" aria-hidden="true" tabindex="-1"></a>                _display(child, child_prefix, is_last<span class="op">=</span>(i <span class="op">==</span> <span class="bu">len</span>(node.children) <span class="op">-</span> <span class="dv">1</span>))</span>
-<span id="cb7-67"><a href="#cb7-67" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-68"><a href="#cb7-68" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="ss">f"[</span><span class="sc">{</span><span class="va">self</span><span class="sc">.</span>root<span class="sc">.</span>i<span class="sc">}</span><span class="ss">, </span><span class="sc">{</span><span class="va">self</span><span class="sc">.</span>root<span class="sc">.</span>j<span class="sc">}</span><span class="ss">]"</span>)</span>
-<span id="cb7-69"><a href="#cb7-69" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> i, child <span class="kw">in</span> <span class="bu">enumerate</span>(<span class="va">self</span>.root.children):</span>
-<span id="cb7-70"><a href="#cb7-70" aria-hidden="true" tabindex="-1"></a>            _display(child, <span class="st">""</span>, is_last<span class="op">=</span>(i <span class="op">==</span> <span class="bu">len</span>(<span class="va">self</span>.root.children) <span class="op">-</span> <span class="dv">1</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a><span class="co"># @dataclass decorator creates default methods for classes like:</span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a><span class="co">#  __init__, or __repr__ if these are not specifically defined.</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a><span class="co"># here: __init__ is created as default, but __repr__ is defined by us!</span></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a><span class="at">@dataclass</span> </span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> Node:</span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>    i: <span class="bu">int</span></span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>    j: <span class="bu">int</span></span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>    children: <span class="bu">list</span>[Node] <span class="op">=</span> field(default_factory<span class="op">=</span><span class="bu">list</span>)</span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> add_child(<span class="va">self</span>, child: Node) <span class="op">-&gt;</span> <span class="va">None</span>:</span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.children.append(child)</span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> <span class="fu">__iter__</span>(<span class="va">self</span>):</span>
+<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a>        <span class="co">"""Postfix (post-order) traversal: children before parent."""</span></span>
+<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> child <span class="kw">in</span> <span class="va">self</span>.children:</span>
+<span id="cb7-20"><a href="#cb7-20" aria-hidden="true" tabindex="-1"></a>            <span class="cf">yield</span> <span class="cf">from</span> child</span>
+<span id="cb7-21"><a href="#cb7-21" aria-hidden="true" tabindex="-1"></a>        <span class="cf">yield</span> <span class="va">self</span></span>
+<span id="cb7-22"><a href="#cb7-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-23"><a href="#cb7-23" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> <span class="fu">__repr__</span>(<span class="va">self</span>):</span>
+<span id="cb7-24"><a href="#cb7-24" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> <span class="ss">f"Node(</span><span class="sc">{</span><span class="va">self</span><span class="sc">.</span>i<span class="sc">}</span><span class="ss">, </span><span class="sc">{</span><span class="va">self</span><span class="sc">.</span>j<span class="sc">}</span><span class="ss">)"</span></span>
+<span id="cb7-25"><a href="#cb7-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-26"><a href="#cb7-26" aria-hidden="true" tabindex="-1"></a><span class="co"># https://mastering-python.com/blog/2023/using-post-init-with-dataclasses</span></span>
+<span id="cb7-27"><a href="#cb7-27" aria-hidden="true" tabindex="-1"></a><span class="co"># with @dataclass, we automatically init the class attributes (here: this would be n AND root), however, we import "field" to tell that we do not want root to be initalized yet!</span></span>
+<span id="cb7-28"><a href="#cb7-28" aria-hidden="true" tabindex="-1"></a><span class="co"># then we use the __post_init__ method to initalize root only AFTER __init__ (this means after initalizing n), and therefore, we initalize root</span></span>
+<span id="cb7-29"><a href="#cb7-29" aria-hidden="true" tabindex="-1"></a><span class="at">@dataclass</span></span>
+<span id="cb7-30"><a href="#cb7-30" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> ClosedRegionTree:</span>
+<span id="cb7-31"><a href="#cb7-31" aria-hidden="true" tabindex="-1"></a>    n: <span class="bu">int</span> <span class="co"># n represents the sequence length of the input structure</span></span>
+<span id="cb7-32"><a href="#cb7-32" aria-hidden="true" tabindex="-1"></a>    root: Node <span class="op">=</span> field(init<span class="op">=</span><span class="va">False</span>)</span>
+<span id="cb7-33"><a href="#cb7-33" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-34"><a href="#cb7-34" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> __post_init__(<span class="va">self</span>):</span>
+<span id="cb7-35"><a href="#cb7-35" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Sentinel root [0, n+1] as described in the procedure</span></span>
+<span id="cb7-36"><a href="#cb7-36" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.root <span class="op">=</span> Node(<span class="op">-</span><span class="dv">1</span>, <span class="va">self</span>.n)</span>
+<span id="cb7-37"><a href="#cb7-37" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-38"><a href="#cb7-38" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> _last_child(<span class="va">self</span>) <span class="op">-&gt;</span> Node <span class="op">|</span> <span class="va">None</span>:</span>
+<span id="cb7-39"><a href="#cb7-39" aria-hidden="true" tabindex="-1"></a>        <span class="co">"""Child of root with largest left border, or None if no children."""</span></span>
+<span id="cb7-40"><a href="#cb7-40" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> <span class="va">self</span>.root.children[<span class="op">-</span><span class="dv">1</span>] <span class="cf">if</span> <span class="va">self</span>.root.children <span class="cf">else</span> <span class="va">None</span></span>
+<span id="cb7-41"><a href="#cb7-41" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-42"><a href="#cb7-42" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> add(<span class="va">self</span>, i: <span class="bu">int</span>, j: <span class="bu">int</span>) <span class="op">-&gt;</span> <span class="va">None</span>:</span>
+<span id="cb7-43"><a href="#cb7-43" aria-hidden="true" tabindex="-1"></a>        <span class="co">"""Add closed region [i, j] in postfix order (procedure Add-To-Tree)."""</span></span>
+<span id="cb7-44"><a href="#cb7-44" aria-hidden="true" tabindex="-1"></a>        node <span class="op">=</span> Node(i, j)                          <span class="co"># step 1</span></span>
+<span id="cb7-45"><a href="#cb7-45" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-46"><a href="#cb7-46" aria-hidden="true" tabindex="-1"></a>        current <span class="op">=</span> <span class="va">self</span>._last_child()               <span class="co"># step 2</span></span>
+<span id="cb7-47"><a href="#cb7-47" aria-hidden="true" tabindex="-1"></a>        sentinel <span class="op">=</span> Node(<span class="dv">0</span>, <span class="dv">0</span>)</span>
+<span id="cb7-48"><a href="#cb7-48" aria-hidden="true" tabindex="-1"></a>        ab <span class="op">=</span> current <span class="cf">if</span> current <span class="kw">is</span> <span class="kw">not</span> <span class="va">None</span> <span class="cf">else</span> sentinel</span>
+<span id="cb7-49"><a href="#cb7-49" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-50"><a href="#cb7-50" aria-hidden="true" tabindex="-1"></a>        <span class="cf">while</span> ab.i <span class="op">&gt;</span> i:                            <span class="co"># step 3</span></span>
+<span id="cb7-51"><a href="#cb7-51" aria-hidden="true" tabindex="-1"></a>            node.add_child(ab)                     <span class="co"># step 4</span></span>
+<span id="cb7-52"><a href="#cb7-52" aria-hidden="true" tabindex="-1"></a>            <span class="va">self</span>.root.children.pop()</span>
+<span id="cb7-53"><a href="#cb7-53" aria-hidden="true" tabindex="-1"></a>            current <span class="op">=</span> <span class="va">self</span>._last_child()           <span class="co"># step 5</span></span>
+<span id="cb7-54"><a href="#cb7-54" aria-hidden="true" tabindex="-1"></a>            ab <span class="op">=</span> current <span class="cf">if</span> current <span class="kw">is</span> <span class="kw">not</span> <span class="va">None</span> <span class="cf">else</span> sentinel</span>
+<span id="cb7-55"><a href="#cb7-55" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-56"><a href="#cb7-56" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.root.add_child(node)                  <span class="co"># step 7</span></span>
+<span id="cb7-57"><a href="#cb7-57" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-58"><a href="#cb7-58" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> postfix(<span class="va">self</span>) <span class="op">-&gt;</span> <span class="bu">list</span>[Node]:</span>
+<span id="cb7-59"><a href="#cb7-59" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> <span class="bu">list</span>(<span class="va">self</span>.root)</span>
+<span id="cb7-60"><a href="#cb7-60" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-61"><a href="#cb7-61" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> display(<span class="va">self</span>) <span class="op">-&gt;</span> <span class="va">None</span>:</span>
+<span id="cb7-62"><a href="#cb7-62" aria-hidden="true" tabindex="-1"></a>        <span class="kw">def</span> _display(node: Node, prefix: <span class="bu">str</span> <span class="op">=</span> <span class="st">""</span>, is_last: <span class="bu">bool</span> <span class="op">=</span> <span class="va">True</span>) <span class="op">-&gt;</span> <span class="va">None</span>:</span>
+<span id="cb7-63"><a href="#cb7-63" aria-hidden="true" tabindex="-1"></a>            connector <span class="op">=</span> <span class="st">"└── "</span> <span class="cf">if</span> is_last <span class="cf">else</span> <span class="st">"├── "</span></span>
+<span id="cb7-64"><a href="#cb7-64" aria-hidden="true" tabindex="-1"></a>            <span class="bu">print</span>(prefix <span class="op">+</span> connector <span class="op">+</span> <span class="ss">f"[</span><span class="sc">{</span>node<span class="sc">.</span>i<span class="sc">}</span><span class="ss">, </span><span class="sc">{</span>node<span class="sc">.</span>j<span class="sc">}</span><span class="ss">]"</span>)</span>
+<span id="cb7-65"><a href="#cb7-65" aria-hidden="true" tabindex="-1"></a>            child_prefix <span class="op">=</span> prefix <span class="op">+</span> (<span class="st">"    "</span> <span class="cf">if</span> is_last <span class="cf">else</span> <span class="st">"│   "</span>)</span>
+<span id="cb7-66"><a href="#cb7-66" aria-hidden="true" tabindex="-1"></a>            <span class="cf">for</span> i, child <span class="kw">in</span> <span class="bu">enumerate</span>(node.children):</span>
+<span id="cb7-67"><a href="#cb7-67" aria-hidden="true" tabindex="-1"></a>                _display(child, child_prefix, is_last<span class="op">=</span>(i <span class="op">==</span> <span class="bu">len</span>(node.children) <span class="op">-</span> <span class="dv">1</span>))</span>
+<span id="cb7-68"><a href="#cb7-68" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-69"><a href="#cb7-69" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="ss">f"[</span><span class="sc">{</span><span class="va">self</span><span class="sc">.</span>root<span class="sc">.</span>i<span class="sc">}</span><span class="ss">, </span><span class="sc">{</span><span class="va">self</span><span class="sc">.</span>root<span class="sc">.</span>j<span class="sc">}</span><span class="ss">]"</span>)</span>
+<span id="cb7-70"><a href="#cb7-70" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> i, child <span class="kw">in</span> <span class="bu">enumerate</span>(<span class="va">self</span>.root.children):</span>
+<span id="cb7-71"><a href="#cb7-71" aria-hidden="true" tabindex="-1"></a>            _display(child, <span class="st">""</span>, is_last<span class="op">=</span>(i <span class="op">==</span> <span class="bu">len</span>(<span class="va">self</span>.root.children) <span class="op">-</span> <span class="dv">1</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<div id="426921c8" class="cell" data-execution_count="6">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb8"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>tree <span class="op">=</span> ClosedRegionTree(n <span class="op">=</span> <span class="dv">15</span>)</span>
-<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(tree)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="cell-output cell-output-stdout">
-<pre><code>ClosedRegionTree(n=15, root=Node(-1, 15))</code></pre>
+</section>
+<section id="tree-building-function-parsing-function" class="level3">
+<h3 class="anchored" data-anchor-id="tree-building-function-parsing-function">Tree building function (parsing function)</h3>
+<div id="a43fcc32" class="cell" data-execution_count="7">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb8"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> BuildClosedRegionsTree(structure: <span class="bu">str</span>):</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>    n <span class="op">=</span> <span class="bu">len</span>(structure)</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>    pt <span class="op">=</span> dot_bracket_to_pairtable(structure)</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>    tree <span class="op">=</span> ClosedRegionTree(n)</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>    stack <span class="op">=</span> []</span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> i, char <span class="kw">in</span> <span class="bu">enumerate</span>(structure):</span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>        <span class="co"># pt[i] is the index of the partner nucleotide, or None if unpaired</span></span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> pt[i] <span class="kw">is</span> <span class="kw">not</span> <span class="va">None</span>:</span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a>            <span class="co"># Case 1: Opening bracket (i &lt; pt[i])</span></span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a>            <span class="cf">if</span> i <span class="op">&lt;</span> pt[i]:</span>
+<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a>                stack.append([i, pt[i]])</span>
+<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a>            </span>
+<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a>            <span class="co"># Case 2: Closing bracket (pt[i] &lt; i)</span></span>
+<span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a>            <span class="co"># This logic handles interval merging for pseudoknots</span></span>
+<span id="cb8-17"><a href="#cb8-17" aria-hidden="true" tabindex="-1"></a>            <span class="cf">elif</span> pt[i] <span class="op">&lt;</span> i:</span>
+<span id="cb8-18"><a href="#cb8-18" aria-hidden="true" tabindex="-1"></a>                E <span class="op">=</span> i</span>
+<span id="cb8-19"><a href="#cb8-19" aria-hidden="true" tabindex="-1"></a>                <span class="co"># explicitly check for pseudoknot crossing</span></span>
+<span id="cb8-20"><a href="#cb8-20" aria-hidden="true" tabindex="-1"></a>                <span class="co"># even though on properly defined pair tables, the for loop would already poped stack entries where top.E &lt;= i</span></span>
+<span id="cb8-21"><a href="#cb8-21" aria-hidden="true" tabindex="-1"></a>                <span class="cf">while</span> stack <span class="kw">and</span> stack[<span class="op">-</span><span class="dv">1</span>][<span class="dv">1</span>] <span class="op">&gt;</span> i <span class="kw">and</span> stack[<span class="op">-</span><span class="dv">1</span>][<span class="dv">0</span>] <span class="op">&gt;</span> pt[i]:</span>
+<span id="cb8-22"><a href="#cb8-22" aria-hidden="true" tabindex="-1"></a>                    _, topE <span class="op">=</span> stack.pop()</span>
+<span id="cb8-23"><a href="#cb8-23" aria-hidden="true" tabindex="-1"></a>                    E <span class="op">=</span> <span class="bu">max</span>(E, topE)</span>
+<span id="cb8-24"><a href="#cb8-24" aria-hidden="true" tabindex="-1"></a>                </span>
+<span id="cb8-25"><a href="#cb8-25" aria-hidden="true" tabindex="-1"></a>                <span class="co"># If there is still a base pair on the stack, </span></span>
+<span id="cb8-26"><a href="#cb8-26" aria-hidden="true" tabindex="-1"></a>                <span class="co"># update its end-point to the furthest point reached (E)</span></span>
+<span id="cb8-27"><a href="#cb8-27" aria-hidden="true" tabindex="-1"></a>                <span class="cf">if</span> stack:</span>
+<span id="cb8-28"><a href="#cb8-28" aria-hidden="true" tabindex="-1"></a>                    stack[<span class="op">-</span><span class="dv">1</span>][<span class="dv">1</span>] <span class="op">=</span> <span class="bu">max</span>(E, stack[<span class="op">-</span><span class="dv">1</span>][<span class="dv">1</span>])</span>
+<span id="cb8-29"><a href="#cb8-29" aria-hidden="true" tabindex="-1"></a>            </span>
+<span id="cb8-30"><a href="#cb8-30" aria-hidden="true" tabindex="-1"></a>            <span class="co"># Case 3: Check if the current nucleotide closes the region on top of stack</span></span>
+<span id="cb8-31"><a href="#cb8-31" aria-hidden="true" tabindex="-1"></a>            <span class="cf">if</span> stack <span class="kw">and</span> i <span class="op">==</span> stack[<span class="op">-</span><span class="dv">1</span>][<span class="dv">1</span>]:</span>
+<span id="cb8-32"><a href="#cb8-32" aria-hidden="true" tabindex="-1"></a>                idx, jdx <span class="op">=</span> stack.pop()</span>
+<span id="cb8-33"><a href="#cb8-33" aria-hidden="true" tabindex="-1"></a>                tree.add(idx, jdx)</span>
+<span id="cb8-34"><a href="#cb8-34" aria-hidden="true" tabindex="-1"></a>                </span>
+<span id="cb8-35"><a href="#cb8-35" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> tree</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-</div>
-<div id="e3e2728b" class="cell" data-execution_count="8">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb10"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> BuildClosedRegionsTree(structure: <span class="bu">str</span>):</span>
-<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>    n <span class="op">=</span> <span class="bu">len</span>(structure)</span>
-<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>    pt <span class="op">=</span> dot_bracket_to_pairtable(structure)</span>
-<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>    tree <span class="op">=</span> ClosedRegionTree(n)</span>
-<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>    stack <span class="op">=</span> []</span>
-<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> i, char <span class="kw">in</span> <span class="bu">enumerate</span>(structure):</span>
-<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>        <span class="co"># pt[i] is the index of the partner nucleotide, or None if unpaired</span></span>
-<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> pt[i] <span class="kw">is</span> <span class="kw">not</span> <span class="va">None</span>:</span>
-<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a>            <span class="co"># Case 1: Opening bracket (i &lt; pt[i])</span></span>
-<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a>            <span class="cf">if</span> i <span class="op">&lt;</span> pt[i]:</span>
-<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a>                stack.append([i, pt[i]])</span>
-<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a>            </span>
-<span id="cb10-15"><a href="#cb10-15" aria-hidden="true" tabindex="-1"></a>            <span class="co"># Case 2: Closing bracket (pt[i] &lt; i)</span></span>
-<span id="cb10-16"><a href="#cb10-16" aria-hidden="true" tabindex="-1"></a>            <span class="co"># This logic handles interval merging for pseudoknots</span></span>
-<span id="cb10-17"><a href="#cb10-17" aria-hidden="true" tabindex="-1"></a>            <span class="cf">elif</span> pt[i] <span class="op">&lt;</span> i:</span>
-<span id="cb10-18"><a href="#cb10-18" aria-hidden="true" tabindex="-1"></a>                E <span class="op">=</span> i</span>
-<span id="cb10-19"><a href="#cb10-19" aria-hidden="true" tabindex="-1"></a>                <span class="co"># explicitly check for pseudoknot crossing</span></span>
-<span id="cb10-20"><a href="#cb10-20" aria-hidden="true" tabindex="-1"></a>                <span class="co"># even though on properly defined pair tables, the for loop would already poped stack entries where top.E &lt;= i</span></span>
-<span id="cb10-21"><a href="#cb10-21" aria-hidden="true" tabindex="-1"></a>                <span class="cf">while</span> stack <span class="kw">and</span> stack[<span class="op">-</span><span class="dv">1</span>][<span class="dv">1</span>] <span class="op">&gt;</span> i <span class="kw">and</span> stack[<span class="op">-</span><span class="dv">1</span>][<span class="dv">0</span>] <span class="op">&gt;</span> pt[i]:</span>
-<span id="cb10-22"><a href="#cb10-22" aria-hidden="true" tabindex="-1"></a>                    _, topE <span class="op">=</span> stack.pop()</span>
-<span id="cb10-23"><a href="#cb10-23" aria-hidden="true" tabindex="-1"></a>                    E <span class="op">=</span> <span class="bu">max</span>(E, topE)</span>
-<span id="cb10-24"><a href="#cb10-24" aria-hidden="true" tabindex="-1"></a>                </span>
-<span id="cb10-25"><a href="#cb10-25" aria-hidden="true" tabindex="-1"></a>                <span class="co"># If there is still a base pair on the stack, </span></span>
-<span id="cb10-26"><a href="#cb10-26" aria-hidden="true" tabindex="-1"></a>                <span class="co"># update its end-point to the furthest point reached (E)</span></span>
-<span id="cb10-27"><a href="#cb10-27" aria-hidden="true" tabindex="-1"></a>                <span class="cf">if</span> stack:</span>
-<span id="cb10-28"><a href="#cb10-28" aria-hidden="true" tabindex="-1"></a>                    stack[<span class="op">-</span><span class="dv">1</span>][<span class="dv">1</span>] <span class="op">=</span> <span class="bu">max</span>(E, stack[<span class="op">-</span><span class="dv">1</span>][<span class="dv">1</span>])</span>
-<span id="cb10-29"><a href="#cb10-29" aria-hidden="true" tabindex="-1"></a>            </span>
-<span id="cb10-30"><a href="#cb10-30" aria-hidden="true" tabindex="-1"></a>            <span class="co"># Case 3: Check if the current nucleotide closes the region on top of stack</span></span>
-<span id="cb10-31"><a href="#cb10-31" aria-hidden="true" tabindex="-1"></a>            <span class="cf">if</span> stack <span class="kw">and</span> i <span class="op">==</span> stack[<span class="op">-</span><span class="dv">1</span>][<span class="dv">1</span>]:</span>
-<span id="cb10-32"><a href="#cb10-32" aria-hidden="true" tabindex="-1"></a>                idx, jdx <span class="op">=</span> stack.pop()</span>
-<span id="cb10-33"><a href="#cb10-33" aria-hidden="true" tabindex="-1"></a>                tree.add(idx, jdx)</span>
-<span id="cb10-34"><a href="#cb10-34" aria-hidden="true" tabindex="-1"></a>                </span>
-<span id="cb10-35"><a href="#cb10-35" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> tree</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</div>
-<div id="d01dfedf" class="cell" data-execution_count="9">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb11"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>turnip_virus_structure <span class="op">=</span> <span class="st">"(((((.......)))))(((....[[[[[)))...]]]]]...."</span></span>
-<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>test_tree <span class="op">=</span> BuildClosedRegionsTree(turnip_virus_structure)</span>
-<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"Turnip Virus Tree:"</span>)</span>
-<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>test_tree.display()</span>
-<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"</span><span class="ch">\n\n</span><span class="st">"</span>)</span>
-<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>another_example <span class="op">=</span> <span class="st">"(((((.(..((((........)))).(((((.......))))).....(((((.......)))))).)))))...."</span></span>
-<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a>test_tree2 <span class="op">=</span> BuildClosedRegionsTree(another_example)</span>
-<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"Tree:"</span>)</span>
-<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a>test_tree2.display()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="example-tree" class="level3">
+<h3 class="anchored" data-anchor-id="example-tree">Example Tree</h3>
+<div id="427f7e55" class="cell" data-execution_count="8">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb9"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>turnip_virus_structure <span class="op">=</span> <span class="st">"(((((.......)))))(((....[[[[[)))...]]]]]...."</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>test_tree <span class="op">=</span> BuildClosedRegionsTree(turnip_virus_structure)</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"Turnip Virus Tree:"</span>)</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>test_tree.display()</span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"</span><span class="ch">\n\n</span><span class="st">"</span>)</span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>another_example <span class="op">=</span> <span class="st">"(((((.(..((((........)))).(((((.......))))).....(((((.......)))))).)))))...."</span></span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>test_tree2 <span class="op">=</span> BuildClosedRegionsTree(another_example)</span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"Tree:"</span>)</span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a>test_tree2.display()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>Turnip Virus Tree:
 [-1, 44]
@@ -658,427 +690,92 @@ Tree:
                                     └── [12, 21]</code></pre>
 </div>
 </div>
-<div id="81449917" class="cell" data-execution_count="10">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb13"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> matplotlib.pyplot <span class="im">as</span> plt</span>
-<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> matplotlib.patches <span class="im">as</span> mpatches</span>
-<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> matplotlib.patches <span class="im">import</span> Arc</span>
-<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>_NT_COLORS <span class="op">=</span> {<span class="st">'A'</span>: <span class="st">'#E63946'</span>, <span class="st">'U'</span>: <span class="st">'#2A9D8F'</span>, <span class="st">'G'</span>: <span class="st">'#E9C46A'</span>, <span class="st">'C'</span>: <span class="st">'#457B9D'</span>}</span>
-<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> plot_rna_arc(</span>
-<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a>    sequence: <span class="bu">str</span>,</span>
-<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a>    pair_table: <span class="bu">list</span>[<span class="bu">int</span>],</span>
-<span id="cb13-12"><a href="#cb13-12" aria-hidden="true" tabindex="-1"></a>    <span class="op">*</span>,</span>
-<span id="cb13-13"><a href="#cb13-13" aria-hidden="true" tabindex="-1"></a>    title: <span class="bu">str</span> <span class="op">=</span> <span class="st">"RNA Secondary Structure"</span>,</span>
-<span id="cb13-14"><a href="#cb13-14" aria-hidden="true" tabindex="-1"></a>    figsize: <span class="bu">tuple</span>[<span class="bu">float</span>, <span class="bu">float</span>] <span class="op">=</span> (<span class="dv">14</span>, <span class="dv">5</span>),</span>
-<span id="cb13-15"><a href="#cb13-15" aria-hidden="true" tabindex="-1"></a>    save_path: <span class="bu">str</span> <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> <span class="va">None</span>,</span>
-<span id="cb13-16"><a href="#cb13-16" aria-hidden="true" tabindex="-1"></a>):</span>
-<span id="cb13-17"><a href="#cb13-17" aria-hidden="true" tabindex="-1"></a>    n <span class="op">=</span> <span class="bu">len</span>(pair_table)</span>
-<span id="cb13-18"><a href="#cb13-18" aria-hidden="true" tabindex="-1"></a>    fig, ax <span class="op">=</span> plt.subplots(figsize<span class="op">=</span>figsize)</span>
-<span id="cb13-19"><a href="#cb13-19" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb13-20"><a href="#cb13-20" aria-hidden="true" tabindex="-1"></a>    <span class="co"># ── backbone line ────────────────────────────────────────────────────────</span></span>
-<span id="cb13-21"><a href="#cb13-21" aria-hidden="true" tabindex="-1"></a>    ax.plot([<span class="dv">0</span>, n <span class="op">-</span> <span class="dv">1</span>], [<span class="dv">0</span>, <span class="dv">0</span>], color<span class="op">=</span><span class="st">"#444444"</span>, lw<span class="op">=</span><span class="fl">1.5</span>, zorder<span class="op">=</span><span class="dv">1</span>)</span>
-<span id="cb13-22"><a href="#cb13-22" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb13-23"><a href="#cb13-23" aria-hidden="true" tabindex="-1"></a>    <span class="co"># ── arcs for base pairs ──────────────────────────────────────────────────</span></span>
-<span id="cb13-24"><a href="#cb13-24" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(n):</span>
-<span id="cb13-25"><a href="#cb13-25" aria-hidden="true" tabindex="-1"></a>        j <span class="op">=</span> pair_table[i]</span>
-<span id="cb13-26"><a href="#cb13-26" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> j <span class="kw">is</span> <span class="kw">not</span> <span class="va">None</span> <span class="kw">and</span> j <span class="op">&gt;</span> i:                            <span class="co"># j == -1 means unpaired</span></span>
-<span id="cb13-27"><a href="#cb13-27" aria-hidden="true" tabindex="-1"></a>            center_x <span class="op">=</span> (i <span class="op">+</span> j) <span class="op">/</span> <span class="dv">2</span></span>
-<span id="cb13-28"><a href="#cb13-28" aria-hidden="true" tabindex="-1"></a>            diameter  <span class="op">=</span> j <span class="op">-</span> i</span>
-<span id="cb13-29"><a href="#cb13-29" aria-hidden="true" tabindex="-1"></a>            arc <span class="op">=</span> Arc(</span>
-<span id="cb13-30"><a href="#cb13-30" aria-hidden="true" tabindex="-1"></a>                xy<span class="op">=</span>(center_x, <span class="dv">0</span>),</span>
-<span id="cb13-31"><a href="#cb13-31" aria-hidden="true" tabindex="-1"></a>                width<span class="op">=</span>diameter,</span>
-<span id="cb13-32"><a href="#cb13-32" aria-hidden="true" tabindex="-1"></a>                height<span class="op">=</span>diameter,</span>
-<span id="cb13-33"><a href="#cb13-33" aria-hidden="true" tabindex="-1"></a>                angle<span class="op">=</span><span class="dv">0</span>,</span>
-<span id="cb13-34"><a href="#cb13-34" aria-hidden="true" tabindex="-1"></a>                theta1<span class="op">=</span><span class="dv">0</span>,</span>
-<span id="cb13-35"><a href="#cb13-35" aria-hidden="true" tabindex="-1"></a>                theta2<span class="op">=</span><span class="dv">180</span>,</span>
-<span id="cb13-36"><a href="#cb13-36" aria-hidden="true" tabindex="-1"></a>                color<span class="op">=</span><span class="st">"#264653"</span>,</span>
-<span id="cb13-37"><a href="#cb13-37" aria-hidden="true" tabindex="-1"></a>                lw<span class="op">=</span><span class="fl">1.2</span>,</span>
-<span id="cb13-38"><a href="#cb13-38" aria-hidden="true" tabindex="-1"></a>                zorder<span class="op">=</span><span class="dv">2</span>,</span>
-<span id="cb13-39"><a href="#cb13-39" aria-hidden="true" tabindex="-1"></a>            )</span>
-<span id="cb13-40"><a href="#cb13-40" aria-hidden="true" tabindex="-1"></a>            ax.add_patch(arc)</span>
-<span id="cb13-41"><a href="#cb13-41" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb13-42"><a href="#cb13-42" aria-hidden="true" tabindex="-1"></a>    <span class="co"># ── nucleotide nodes ─────────────────────────────────────────────────────</span></span>
-<span id="cb13-43"><a href="#cb13-43" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> i, nt <span class="kw">in</span> <span class="bu">enumerate</span>(sequence):</span>
-<span id="cb13-44"><a href="#cb13-44" aria-hidden="true" tabindex="-1"></a>        color <span class="op">=</span> _NT_COLORS.get(nt.upper(), <span class="st">"#AAAAAA"</span>)</span>
-<span id="cb13-45"><a href="#cb13-45" aria-hidden="true" tabindex="-1"></a>        ax.scatter(i, <span class="dv">0</span>, color<span class="op">=</span>color, s<span class="op">=</span><span class="dv">120</span>, zorder<span class="op">=</span><span class="dv">3</span>)</span>
-<span id="cb13-46"><a href="#cb13-46" aria-hidden="true" tabindex="-1"></a>        ax.text(i, <span class="op">-</span><span class="fl">0.6</span>, nt, ha<span class="op">=</span><span class="st">'center'</span>, va<span class="op">=</span><span class="st">'top'</span>, fontsize<span class="op">=</span><span class="dv">7</span>, color<span class="op">=</span>color)</span>
-<span id="cb13-47"><a href="#cb13-47" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb13-48"><a href="#cb13-48" aria-hidden="true" tabindex="-1"></a>    <span class="co"># ── cosmetics ────────────────────────────────────────────────────────────</span></span>
-<span id="cb13-49"><a href="#cb13-49" aria-hidden="true" tabindex="-1"></a>    legend_handles <span class="op">=</span> [</span>
-<span id="cb13-50"><a href="#cb13-50" aria-hidden="true" tabindex="-1"></a>        mpatches.Patch(color<span class="op">=</span>col, label<span class="op">=</span>nt)</span>
-<span id="cb13-51"><a href="#cb13-51" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> nt, col <span class="kw">in</span> _NT_COLORS.items()</span>
-<span id="cb13-52"><a href="#cb13-52" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> nt <span class="kw">in</span> sequence.upper()</span>
-<span id="cb13-53"><a href="#cb13-53" aria-hidden="true" tabindex="-1"></a>    ]</span>
-<span id="cb13-54"><a href="#cb13-54" aria-hidden="true" tabindex="-1"></a>    ax.legend(handles<span class="op">=</span>legend_handles, loc<span class="op">=</span><span class="st">'upper right'</span>, framealpha<span class="op">=</span><span class="fl">0.9</span>)</span>
-<span id="cb13-55"><a href="#cb13-55" aria-hidden="true" tabindex="-1"></a>    ax.set_title(title, fontweight<span class="op">=</span><span class="st">'bold'</span>, pad<span class="op">=</span><span class="dv">10</span>)</span>
-<span id="cb13-56"><a href="#cb13-56" aria-hidden="true" tabindex="-1"></a>    ax.set_xlim(<span class="op">-</span><span class="dv">1</span>, n)</span>
-<span id="cb13-57"><a href="#cb13-57" aria-hidden="true" tabindex="-1"></a>    ax.set_ylim(<span class="op">-</span><span class="fl">1.5</span>, n <span class="op">/</span> <span class="dv">2</span>)</span>
-<span id="cb13-58"><a href="#cb13-58" aria-hidden="true" tabindex="-1"></a>    ax.axis(<span class="st">'off'</span>)</span>
-<span id="cb13-59"><a href="#cb13-59" aria-hidden="true" tabindex="-1"></a>    fig.tight_layout()</span>
-<span id="cb13-60"><a href="#cb13-60" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb13-61"><a href="#cb13-61" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> save_path:</span>
-<span id="cb13-62"><a href="#cb13-62" aria-hidden="true" tabindex="-1"></a>        fig.savefig(save_path, dpi<span class="op">=</span><span class="dv">150</span>, bbox_inches<span class="op">=</span><span class="st">'tight'</span>)</span>
-<span id="cb13-63"><a href="#cb13-63" aria-hidden="true" tabindex="-1"></a>    plt.show()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="arc-diagram" class="level3">
+<h3 class="anchored" data-anchor-id="arc-diagram">arc diagram</h3>
+<div id="cdf6b14c" class="cell" data-execution_count="9">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb11"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> matplotlib.pyplot <span class="im">as</span> plt</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> matplotlib.patches <span class="im">as</span> mpatches</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> matplotlib.patches <span class="im">import</span> Arc</span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>_NT_COLORS <span class="op">=</span> {<span class="st">'A'</span>: <span class="st">'#E63946'</span>, <span class="st">'U'</span>: <span class="st">'#2A9D8F'</span>, <span class="st">'G'</span>: <span class="st">'#E9C46A'</span>, <span class="st">'C'</span>: <span class="st">'#457B9D'</span>}</span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> plot_rna_arc(</span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a>    sequence: <span class="bu">str</span>,</span>
+<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a>    pair_table: <span class="bu">list</span>[<span class="bu">int</span>],</span>
+<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a>    <span class="op">*</span>,</span>
+<span id="cb11-13"><a href="#cb11-13" aria-hidden="true" tabindex="-1"></a>    title: <span class="bu">str</span> <span class="op">=</span> <span class="st">"RNA Secondary Structure"</span>,</span>
+<span id="cb11-14"><a href="#cb11-14" aria-hidden="true" tabindex="-1"></a>    figsize: <span class="bu">tuple</span>[<span class="bu">float</span>, <span class="bu">float</span>] <span class="op">=</span> (<span class="dv">14</span>, <span class="dv">5</span>),</span>
+<span id="cb11-15"><a href="#cb11-15" aria-hidden="true" tabindex="-1"></a>    save_path: <span class="bu">str</span> <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> <span class="va">None</span>,</span>
+<span id="cb11-16"><a href="#cb11-16" aria-hidden="true" tabindex="-1"></a>):</span>
+<span id="cb11-17"><a href="#cb11-17" aria-hidden="true" tabindex="-1"></a>    n <span class="op">=</span> <span class="bu">len</span>(pair_table)</span>
+<span id="cb11-18"><a href="#cb11-18" aria-hidden="true" tabindex="-1"></a>    fig, ax <span class="op">=</span> plt.subplots(figsize<span class="op">=</span>figsize)</span>
+<span id="cb11-19"><a href="#cb11-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-20"><a href="#cb11-20" aria-hidden="true" tabindex="-1"></a>    <span class="co"># ── backbone line ────────────────────────────────────────────────────────</span></span>
+<span id="cb11-21"><a href="#cb11-21" aria-hidden="true" tabindex="-1"></a>    ax.plot([<span class="dv">0</span>, n <span class="op">-</span> <span class="dv">1</span>], [<span class="dv">0</span>, <span class="dv">0</span>], color<span class="op">=</span><span class="st">"#444444"</span>, lw<span class="op">=</span><span class="fl">1.5</span>, zorder<span class="op">=</span><span class="dv">1</span>)</span>
+<span id="cb11-22"><a href="#cb11-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-23"><a href="#cb11-23" aria-hidden="true" tabindex="-1"></a>    <span class="co"># ── arcs for base pairs ──────────────────────────────────────────────────</span></span>
+<span id="cb11-24"><a href="#cb11-24" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(n):</span>
+<span id="cb11-25"><a href="#cb11-25" aria-hidden="true" tabindex="-1"></a>        j <span class="op">=</span> pair_table[i]</span>
+<span id="cb11-26"><a href="#cb11-26" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> j <span class="kw">is</span> <span class="kw">not</span> <span class="va">None</span> <span class="kw">and</span> j <span class="op">&gt;</span> i:                            <span class="co"># j == -1 means unpaired</span></span>
+<span id="cb11-27"><a href="#cb11-27" aria-hidden="true" tabindex="-1"></a>            center_x <span class="op">=</span> (i <span class="op">+</span> j) <span class="op">/</span> <span class="dv">2</span></span>
+<span id="cb11-28"><a href="#cb11-28" aria-hidden="true" tabindex="-1"></a>            diameter  <span class="op">=</span> j <span class="op">-</span> i</span>
+<span id="cb11-29"><a href="#cb11-29" aria-hidden="true" tabindex="-1"></a>            arc <span class="op">=</span> Arc(</span>
+<span id="cb11-30"><a href="#cb11-30" aria-hidden="true" tabindex="-1"></a>                xy<span class="op">=</span>(center_x, <span class="dv">0</span>),</span>
+<span id="cb11-31"><a href="#cb11-31" aria-hidden="true" tabindex="-1"></a>                width<span class="op">=</span>diameter,</span>
+<span id="cb11-32"><a href="#cb11-32" aria-hidden="true" tabindex="-1"></a>                height<span class="op">=</span>diameter,</span>
+<span id="cb11-33"><a href="#cb11-33" aria-hidden="true" tabindex="-1"></a>                angle<span class="op">=</span><span class="dv">0</span>,</span>
+<span id="cb11-34"><a href="#cb11-34" aria-hidden="true" tabindex="-1"></a>                theta1<span class="op">=</span><span class="dv">0</span>,</span>
+<span id="cb11-35"><a href="#cb11-35" aria-hidden="true" tabindex="-1"></a>                theta2<span class="op">=</span><span class="dv">180</span>,</span>
+<span id="cb11-36"><a href="#cb11-36" aria-hidden="true" tabindex="-1"></a>                color<span class="op">=</span><span class="st">"#264653"</span>,</span>
+<span id="cb11-37"><a href="#cb11-37" aria-hidden="true" tabindex="-1"></a>                lw<span class="op">=</span><span class="fl">1.2</span>,</span>
+<span id="cb11-38"><a href="#cb11-38" aria-hidden="true" tabindex="-1"></a>                zorder<span class="op">=</span><span class="dv">2</span>,</span>
+<span id="cb11-39"><a href="#cb11-39" aria-hidden="true" tabindex="-1"></a>            )</span>
+<span id="cb11-40"><a href="#cb11-40" aria-hidden="true" tabindex="-1"></a>            ax.add_patch(arc)</span>
+<span id="cb11-41"><a href="#cb11-41" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-42"><a href="#cb11-42" aria-hidden="true" tabindex="-1"></a>    <span class="co"># ── nucleotide nodes ─────────────────────────────────────────────────────</span></span>
+<span id="cb11-43"><a href="#cb11-43" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> i, nt <span class="kw">in</span> <span class="bu">enumerate</span>(sequence):</span>
+<span id="cb11-44"><a href="#cb11-44" aria-hidden="true" tabindex="-1"></a>        color <span class="op">=</span> _NT_COLORS.get(nt.upper(), <span class="st">"#AAAAAA"</span>)</span>
+<span id="cb11-45"><a href="#cb11-45" aria-hidden="true" tabindex="-1"></a>        ax.scatter(i, <span class="dv">0</span>, color<span class="op">=</span>color, s<span class="op">=</span><span class="dv">120</span>, zorder<span class="op">=</span><span class="dv">3</span>)</span>
+<span id="cb11-46"><a href="#cb11-46" aria-hidden="true" tabindex="-1"></a>        ax.text(i, <span class="op">-</span><span class="fl">0.6</span>, nt, ha<span class="op">=</span><span class="st">'center'</span>, va<span class="op">=</span><span class="st">'top'</span>, fontsize<span class="op">=</span><span class="dv">7</span>, color<span class="op">=</span>color)</span>
+<span id="cb11-47"><a href="#cb11-47" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-48"><a href="#cb11-48" aria-hidden="true" tabindex="-1"></a>    <span class="co"># ── cosmetics ────────────────────────────────────────────────────────────</span></span>
+<span id="cb11-49"><a href="#cb11-49" aria-hidden="true" tabindex="-1"></a>    legend_handles <span class="op">=</span> [</span>
+<span id="cb11-50"><a href="#cb11-50" aria-hidden="true" tabindex="-1"></a>        mpatches.Patch(color<span class="op">=</span>col, label<span class="op">=</span>nt)</span>
+<span id="cb11-51"><a href="#cb11-51" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> nt, col <span class="kw">in</span> _NT_COLORS.items()</span>
+<span id="cb11-52"><a href="#cb11-52" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> nt <span class="kw">in</span> sequence.upper()</span>
+<span id="cb11-53"><a href="#cb11-53" aria-hidden="true" tabindex="-1"></a>    ]</span>
+<span id="cb11-54"><a href="#cb11-54" aria-hidden="true" tabindex="-1"></a>    ax.legend(handles<span class="op">=</span>legend_handles, loc<span class="op">=</span><span class="st">'upper right'</span>, framealpha<span class="op">=</span><span class="fl">0.9</span>)</span>
+<span id="cb11-55"><a href="#cb11-55" aria-hidden="true" tabindex="-1"></a>    ax.set_title(title, fontweight<span class="op">=</span><span class="st">'bold'</span>, pad<span class="op">=</span><span class="dv">10</span>)</span>
+<span id="cb11-56"><a href="#cb11-56" aria-hidden="true" tabindex="-1"></a>    ax.set_xlim(<span class="op">-</span><span class="dv">1</span>, n)</span>
+<span id="cb11-57"><a href="#cb11-57" aria-hidden="true" tabindex="-1"></a>    ax.set_ylim(<span class="op">-</span><span class="fl">1.5</span>, n <span class="op">/</span> <span class="dv">2</span>)</span>
+<span id="cb11-58"><a href="#cb11-58" aria-hidden="true" tabindex="-1"></a>    ax.axis(<span class="st">'off'</span>)</span>
+<span id="cb11-59"><a href="#cb11-59" aria-hidden="true" tabindex="-1"></a>    fig.tight_layout()</span>
+<span id="cb11-60"><a href="#cb11-60" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-61"><a href="#cb11-61" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> save_path:</span>
+<span id="cb11-62"><a href="#cb11-62" aria-hidden="true" tabindex="-1"></a>        fig.savefig(save_path, dpi<span class="op">=</span><span class="dv">150</span>, bbox_inches<span class="op">=</span><span class="st">'tight'</span>)</span>
+<span id="cb11-63"><a href="#cb11-63" aria-hidden="true" tabindex="-1"></a>    plt.show()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<div id="613947a1" class="cell" data-execution_count="11">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb14"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>turnip_virus_seq <span class="op">=</span> <span class="st">"GGGAGCUCAACUCUCCCCCCCUUUUCCGAGGGUCAUCGGAACCA"</span></span>
-<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>turnip_virus_edb <span class="op">=</span> <span class="st">"(((((.......)))))(((....[[[[[)))...]]]]]...."</span></span>
-<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>turnip_virus_pt <span class="op">=</span> dot_bracket_to_pairtable(turnip_virus_edb)</span>
-<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>plot_rna_arc(turnip_virus_seq, turnip_virus_pt, title<span class="op">=</span> <span class="st">'Turnip yellow mosaic virus - arc'</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div id="2a054e22" class="cell" data-execution_count="10">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb12"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>turnip_virus_seq <span class="op">=</span> <span class="st">"GGGAGCUCAACUCUCCCCCCCUUUUCCGAGGGUCAUCGGAACCA"</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>turnip_virus_edb <span class="op">=</span> <span class="st">"(((((.......)))))(((....[[[[[)))...]]]]]...."</span></span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>turnip_virus_pt <span class="op">=</span> dot_bracket_to_pairtable(turnip_virus_edb)</span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>plot_rna_arc(turnip_virus_seq, turnip_virus_pt, title<span class="op">=</span> <span class="st">'Turnip yellow mosaic virus - arc'</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="parsing-secondary_structure_files/figure-html/cell-12-output-1.png" width="1334" height="470" class="figure-img"></p>
+<p><img src="parsing-secondary_structure_files/figure-html/cell-11-output-1.png" width="1334" height="470" class="figure-img"></p>
 </figure>
 </div>
 </div>
 </div>
-<p>This is a Shinylive application embedded in a Quarto doc.</p>
-<pre class="shinylive-python" data-engine="python"><code>#| '!! shinylive warning !!': |
-#|   shinylive does not work in self-contained HTML documents.
-#|   Please set `embed-resources: false` in your metadata.
-#| standalone: true
-#| viewerHeight: 620
-
-from shiny import App, ui, render, reactive
-import matplotlib.pyplot as plt
-import matplotlib.patches as mpatches
-from matplotlib.patches import FancyBboxPatch, Arc
-from dataclasses import dataclass, field
-from typing import Optional
-
-# ── Your existing code ────────────────────────────────────────────────────────
-
-@dataclass
-class Node:
-    i: int
-    j: int
-    children: list = field(default_factory=list)
-    pending: bool = False
-
-    def add_child(self, child):
-        self.children.append(child)
-
-    def __iter__(self):
-        for child in self.children:
-            yield from child
-        yield self
-
-
-class Tree:
-    def __init__(self, n: int):
-        self.root = Node(0, n + 1)
-
-    def _last_child(self):
-        return self.root.children[-1] if self.root.children else None
-
-    def add(self, i: int, j: int):
-        node = Node(i, j)
-        current = self._last_child()
-        ab = current if current is not None else Node(0, 0)
-        while ab.i &gt; i:
-            node.children.insert(0, self.root.children.pop())
-            current = self._last_child()
-            ab = current if current is not None else Node(0, 0)
-        self.root.children.append(node)
-
-    def postfix(self):
-        return list(self.root)
-
-
-def dot_bracket_to_pairtable(structure: str) -&gt; list:
-    OPEN_TO_KIND = {
-        "(": "round", "[": "square", "{": "curly", "&lt;": "angle",
-        **{ch: ch.lower() for ch in "ABCDEFGHIJ"},
-    }
-    CLOSE_TO_KIND = {
-        ")": "round", "]": "square", "}": "curly", "&gt;": "angle",
-        **{ch: ch.lower() for ch in "abcdefghij"},
-    }
-    UNPAIRED = set(".-~_,:")
-    stacks: dict = {}
-    table = [None] * len(structure)
-    for i, ch in enumerate(structure):
-        if ch in UNPAIRED:
-            continue
-        elif ch in OPEN_TO_KIND:
-            kind = OPEN_TO_KIND[ch]
-            stacks.setdefault(kind, []).append(i)
-        elif ch in CLOSE_TO_KIND:
-            kind = CLOSE_TO_KIND[ch]
-            stack = stacks.setdefault(kind, [])
-            if not stack:
-                raise ValueError(f"Unmatched closing bracket {ch!r} at position {i}")
-            j = stack.pop()
-            table[i] = j; table[j] = i
-        else:
-            raise ValueError(f"Invalid token {ch!r} at position {i}")
-    for kind, stack in stacks.items():
-        if stack:
-            raise ValueError(f"Unmatched opening bracket of kind '{kind}' at position {stack[0]}")
-    return table
-
-
-def BuildClosedRegionsTree(structure: str) -&gt; Tree:
-    n = len(structure)
-    pt = dot_bracket_to_pairtable(structure)
-    tree = Tree(n)
-    stack = []
-    for i, char in enumerate(structure):
-        if pt[i] is not None:
-            if i &lt; pt[i]:
-                stack.append([i, pt[i]])
-            elif pt[i] &lt; i:
-                E = i
-                while stack and stack[-1][1] &gt; i and stack[-1][0] &gt; pt[i]:
-                    E = max(E, stack.pop()[1])
-                if stack:
-                    stack[-1][1] = max(E, stack[-1][1])
-            if stack and i == stack[-1][1]:
-                idx, jdx = stack.pop()
-                tree.add(idx, jdx)
-    return tree
-
-
-# ── Step recording ────────────────────────────────────────────────────────────
-
-@dataclass
-class Step:
-    desc:      str
-    tree:      Node
-    highlight: Optional[tuple]
-    phase:     str
-    position:  int   # which base i we are currently at
-
-
-def _clone(n: Node) -&gt; Node:
-    return Node(n.i, n.j, [_clone(c) for c in n.children], n.pending)
-
-
-def build_steps(s: str) -&gt; list[Step]:
-    final_tree = BuildClosedRegionsTree(s)
-    regions = [(node.i, node.j) for node in final_tree.postfix()[:-1]]
-
-    n    = len(s)
-    root = Node(0, n + 1)
-    steps: list[Step] = []
-
-    steps.append(Step(
-        desc=f"Sentinel root [0, {n+1}] created.",
-        tree=_clone(root), highlight=None, phase='init', position=0
-    ))
-
-    for ri, rj in regions:
-        steps.append(Step(
-            desc=f"Next region [{ri}, {rj}] — checking root's rightmost child.",
-            tree=_clone(root), highlight=(ri, rj), phase='start', position=ri
-        ))
-
-        node = Node(ri, rj, pending=True)
-        ab   = root.children[-1] if root.children else Node(0, 0)
-
-        while ab.i &gt; ri:
-            stolen = root.children.pop()
-            node.children.insert(0, _clone(stolen))
-            snap = _clone(root)
-            snap.children.append(_clone(node))
-            steps.append(Step(
-                desc=f"Left border {stolen.i} &gt; {ri} → re-parent [{stolen.i}, {stolen.j}] under [{ri}, {rj}]",
-                tree=snap, highlight=(ri, rj), phase='steal', position=ri
-            ))
-            ab = root.children[-1] if root.children else Node(0, 0)
-
-        node.pending = False
-        root.children.append(node)
-        steps.append(Step(
-            desc=f"[{ri}, {rj}] attached as child of root.",
-            tree=_clone(root), highlight=(ri, rj), phase='attach', position=rj
-        ))
-
-    steps.append(Step(
-        desc='Tree construction complete.',
-        tree=_clone(root), highlight=None, phase='done', position=n - 1
-    ))
-    return steps
-
-
-# ── Drawing helpers ───────────────────────────────────────────────────────────
-
-_CHAR_COLOR = {
-    '(':  '#3B8ADD', ')': '#3B8ADD',
-    '[':  '#1D9E75', ']': '#1D9E75',
-    '{':  '#EF9F27', '}': '#EF9F27',
-    '&lt;':  '#D85A30', '&gt;': '#D85A30',
-}
-_PHASE_COLOR = {
-    'init': '#888888', 'start': '#EF9F27',
-    'steal': '#D85A30', 'attach': '#1D9E75', 'done': '#7F77DD',
-}
-
-
-def _layout(root: Node) -&gt; int:
-    counter = [0]
-    def leaves(n):
-        if not n.children:
-            n._cx = counter[0] + 0.5; counter[0] += 1
-        else:
-            for c in n.children: leaves(c)
-            n._cx = (n.children[0]._cx + n.children[-1]._cx) / 2
-    def depth(n, d=0):
-        n._d = d
-        for c in n.children: depth(c, d + 1)
-    leaves(root); depth(root)
-    return counter[0]
-
-
-def _nxy(n, total, W=10.0, lh=1.5):
-    pad = 0.6
-    return pad + n._cx * (W - 2 * pad) / max(total, 1), -n._d * lh
-
-
-def draw_step(s, steps, idx):
-    step = steps[idx]
-    pt   = dot_bracket_to_pairtable(s)
-
-    fig = plt.figure(figsize=(11, 6), facecolor='white')
-    gs  = fig.add_gridspec(2, 1, height_ratios=[1, 4], hspace=0.35)
-    ax_s = fig.add_subplot(gs[0])
-    ax_t = fig.add_subplot(gs[1])
-
-    # ── structure string ──────────────────────────────────────────────────────
-    ax_s.set_xlim(0, len(s)); ax_s.set_ylim(0, 2); ax_s.axis('off')
-
-    # current position cursor
-    pos = step.position
-    ax_s.axvline(x=pos + 0.5, color='#BBBBBB', lw=1, linestyle=':')
-
-    if step.highlight:
-        hi, hj = step.highlight
-        ax_s.add_patch(mpatches.FancyBboxPatch(
-            (hi + 0.05, 0.25), hj - hi + 0.9, 1.2,
-            boxstyle="round,pad=0.05",
-            facecolor='#FFF3CD', edgecolor='#EF9F27', lw=1.5, zorder=0
-        ))
-        ax_s.add_patch(Arc(
-            ((hi + hj + 1) / 2, 0.3), hj - hi, 0.8,
-            angle=0, theta1=0, theta2=180,
-            color='#EF9F27', lw=1.5, linestyle='--'
-        ))
-
-    for i, c in enumerate(s):
-        paired = pt[i] is not None
-        color  = _CHAR_COLOR.get(c, '#7F77DD' if c in 'ABCDEFGHIJabcdefghij' else '#BBBBBB')
-        weight = 'bold' if paired else 'normal'
-        ax_s.text(i + 0.5, 0.85, c,
-                  ha='center', va='center', fontsize=8.5,
-                  family='monospace', color=color if paired else '#CCCCCC',
-                  fontweight=weight, zorder=1)
-        if i % 5 == 0:
-            ax_s.text(i + 0.5, 1.8, str(i),
-                      ha='center', va='center', fontsize=6, color='#AAAAAA')
-
-    ax_s.axvline(x=0, color=_PHASE_COLOR.get(step.phase, '#888'), lw=5)
-    ax_s.set_title(
-        f"Step {idx + 1} / {len(steps)}  ·  [{step.phase}]  ·  {step.desc}",
-        fontsize=8.5, loc='left', color='#444', pad=3
-    )
-
-    # ── tree ──────────────────────────────────────────────────────────────────
-    ax_t.axis('off')
-    tree  = step.tree
-    total = _layout(tree)
-
-    max_d = [0]
-    def _md(n): max_d[0] = max(max_d[0], n._d); [_md(c) for c in n.children]
-    _md(tree)
-
-    W = 10.0; lh = 1.5
-    ax_t.set_xlim(-0.3, W + 0.3)
-    ax_t.set_ylim(-max_d[0] * lh - 0.8, 0.6)
-
-    def draw_edges(n):
-        px, py = _nxy(n, total, W, lh)
-        for c in n.children:
-            cx, cy = _nxy(c, total, W, lh)
-            ax_t.plot([px, cx], [py, cy],
-                      color='#EF9F27' if c.pending else '#DDDDDD',
-                      lw=1.2, linestyle='--' if c.pending else '-', zorder=1)
-            draw_edges(c)
-
-    def draw_nodes(n):
-        x, y    = _nxy(n, total, W, lh)
-        is_root = n._d == 0
-        is_hl   = step.highlight and n.i == step.highlight[0] and n.j == step.highlight[1]
-        if is_root:
-            face, edge, tc = '#F0F0F0', '#AAAAAA', '#666666'
-        elif n.pending:
-            face, edge, tc = '#FAC775', '#BA7517', '#412402'
-        elif is_hl:
-            face, edge, tc = '#5DCAA5', '#0F6E56', '#04342C'
-        else:
-            face, edge, tc = '#9FE1CB', '#1D9E75', '#04342C'
-        ax_t.add_patch(FancyBboxPatch(
-            (x - 0.46, y - 0.27), 0.92, 0.54,
-            boxstyle="round,pad=0.06",
-            facecolor=face, edgecolor=edge,
-            lw=1.5 if (is_hl or n.pending) else 0.8,
-            linestyle='--' if n.pending else '-', zorder=2
-        ))
-        ax_t.text(x, y, f"[{n.i}, {n.j}]",
-                  ha='center', va='center', fontsize=7.5,
-                  family='monospace', color=tc, fontweight='bold', zorder=3)
-        for c in n.children: draw_nodes(c)
-
-    draw_edges(tree)
-    draw_nodes(tree)
-    return fig
-
-
-# ── Shiny app ─────────────────────────────────────────────────────────────────
-
-DEFAULT = "(((((.......)))))(((....[[[[[)))...]]]]]...."
-_steps  = build_steps(DEFAULT)
-
-app_ui = ui.page_fluid(
-    ui.h4("Closed region tree builder", style="margin-bottom:4px"),
-    ui.input_text("structure", "Dot-bracket structure", value=DEFAULT, width="100%"),
-    ui.input_action_button("load", "Load", class_="btn-sm"),
-    ui.hr(),
-    ui.input_slider("step", "Step", min=0, max=len(_steps) - 1, value=0,
-                    step=1, width="100%", animate=ui.AnimationOptions(interval=700)),
-    ui.output_plot("tree_plot", height="520px"),
-)
-
-def server(input, output, session):
-    steps = reactive.value(_steps)
-
-    @reactive.effect
-    @reactive.event(input.load)
-    def _reload():
-        s = input.structure().strip()
-        try:
-            new_steps = build_steps(s)
-            steps.set(new_steps)
-            ui.update_slider("step", min=0, max=len(new_steps) - 1, value=0)
-        except ValueError as e:
-            ui.notification_show(str(e), type="error")
-
-    @output
-    @render.plot
-    def tree_plot():
-        s   = input.structure().strip()
-        idx = input.step()
-        st  = steps.get()
-        idx = min(idx, len(st) - 1)
-        return draw_step(s, st, idx)
-
-app = App(app_ui, server)</code></pre>
 </section>
-<section id="new-test-of-visual" class="level1">
-<h1>new test of visual</h1>
+</section>
+<section id="step-by-step-tree-building" class="level2">
+<h2 class="anchored" data-anchor-id="step-by-step-tree-building">Step-by-step tree building</h2>
+<p>This is a Shinylive application embedded in a Quarto doc.</p>
 <pre class="shinylive-python" data-engine="python"><code>#| '!! shinylive warning !!': |
 #|   shinylive does not work in self-contained HTML documents.
 #|   Please set `embed-resources: false` in your metadata.
@@ -1164,7 +861,7 @@ def build_steps(structure: str) -&gt; list[Step]:
             tree=_clone(roots),
         ))
 
-    snap(f"Initialise. Sentinel root spans [0, {n + 1}].", "init", 0)
+    snap(f"Initialise. Sentinel root spans [-1, {n + 1}].", "init", 0)
 
     for i, char in enumerate(structure):
         if pt[i] is None:
@@ -1316,7 +1013,7 @@ def _draw_tree(ax, step, n_seq):
     ax.axis("off")
     ax.set_title("Closed region tree", fontsize=9, color="#555", pad=4)
     tree      = step.tree
-    root_node = Node(0, n_seq + 1, list(tree))
+    root_node = Node(-1, n_seq, list(tree))
     _layout([root_node])
     n_leaves = max(_count_leaves([root_node]), 1)
     max_d    = max(1, _max_depth([root_node]))
@@ -1868,7 +1565,7 @@ app = App(app_ui, server)</code></pre>
       &nbsp;
     </div>   
     <div class="nav-footer-center">
-<p><a href="https://github.com/jonjaeg"><img src="https://img.shields.io/badge/GitHub-181717?style=flat&amp;logo=github.png" class="img-fluid" alt="GitHub"></a> <a href="https://bsky.app/profile/jonjaeg.bsky.social"><img src="https://img.shields.io/badge/Bluesky-0285FF?style=flat&amp;logo=bluesky.png" class="img-fluid" alt="Bluesky"></a></p>
+<p><em>Built with <a href="https://quarto.org">Quarto</a></em></p>
 </div>
     <div class="nav-footer-right">
       &nbsp;
