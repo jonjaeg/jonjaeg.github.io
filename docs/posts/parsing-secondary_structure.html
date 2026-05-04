@@ -205,16 +205,23 @@ window.Quarto = {
   <li><a href="#pairtable" id="toc-pairtable" class="nav-link" data-scroll-target="#pairtable">PairTable</a>
   <ul class="collapse">
   <li><a href="#implementation-details" id="toc-implementation-details" class="nav-link" data-scroll-target="#implementation-details">Implementation details</a></li>
-  <li><a href="#example" id="toc-example" class="nav-link" data-scroll-target="#example">Example</a></li>
+  <li><a href="#step-by-step-pairtable" id="toc-step-by-step-pairtable" class="nav-link" data-scroll-target="#step-by-step-pairtable">Step-by-step PairTable</a></li>
+  </ul></li>
+  <li><a href="#arc-diagram" id="toc-arc-diagram" class="nav-link" data-scroll-target="#arc-diagram">Arc diagram</a>
+  <ul class="collapse">
+  <li><a href="#example-arc-diagram" id="toc-example-arc-diagram" class="nav-link" data-scroll-target="#example-arc-diagram">Example arc diagram</a></li>
   </ul></li>
   <li><a href="#identify-closed-regions" id="toc-identify-closed-regions" class="nav-link" data-scroll-target="#identify-closed-regions">Identify closed regions</a>
   <ul class="collapse">
   <li><a href="#tree-data-structure" id="toc-tree-data-structure" class="nav-link" data-scroll-target="#tree-data-structure">Tree data structure</a></li>
-  <li><a href="#tree-building-function-parsing-function" id="toc-tree-building-function-parsing-function" class="nav-link" data-scroll-target="#tree-building-function-parsing-function">Tree building function (parsing function)</a></li>
+  <li><a href="#tree-building-function-parsing-function" id="toc-tree-building-function-parsing-function" class="nav-link" data-scroll-target="#tree-building-function-parsing-function">Tree building function (parsing function)</a>
+  <ul class="collapse">
+  <li><a href="#details" id="toc-details" class="nav-link" data-scroll-target="#details">Details</a></li>
   <li><a href="#example-tree" id="toc-example-tree" class="nav-link" data-scroll-target="#example-tree">Example Tree</a></li>
-  <li><a href="#arc-diagram" id="toc-arc-diagram" class="nav-link" data-scroll-target="#arc-diagram">arc diagram</a></li>
   </ul></li>
   <li><a href="#step-by-step-tree-building" id="toc-step-by-step-tree-building" class="nav-link" data-scroll-target="#step-by-step-tree-building">Step-by-step tree building</a></li>
+  </ul></li>
+  <li><a href="#why-do-we-even-need-this" id="toc-why-do-we-even-need-this" class="nav-link" data-scroll-target="#why-do-we-even-need-this">Why do we even need this?</a></li>
   </ul>
 </nav>
     </div>
@@ -262,15 +269,15 @@ window.Quarto = {
 
 
 <p>This algorithm was published in 2007 by <em>BAHARAK RASTEGARI</em> and <em>ANNE CONDON</em> in the JOURNAL OF COMPUTATIONAL BIOLOGY (DOI: 10.1089/cmb.2006.0108).</p>
-<section id="introduction" class="level2">
-<h2 class="anchored" data-anchor-id="introduction">Introduction</h2>
+<section id="introduction" class="level1">
+<h1>Introduction</h1>
 <p>Pseudoknots are a class of RNA secondary structures that are found in all three domains of life as well as viruses <a href="https://en.wikipedia.org/wiki/Pseudoknot">wikipedia</a>.</p>
 <p><em>Prediction</em> of pseudoknotted structures from a given sequence is a very, <em>very</em> difficult problem and found to be <em>NP-hard</em>. Prediction of non-pseudoknotted structures can be done via a dynamic programing approach in <span class="math inline">\(O(N^3)\)</span> time via e.g Nussinov or Zuker’s algorithm.</p>
 <p>In this blog post, we simply want to <strong>parse</strong> a given RNA molecule with its already predcited structure (pseudoknotted or non-pseudoknotted) and build a Tree-of-closed-regions of the structure.</p>
-<section id="setup" class="level3">
-<h3 class="anchored" data-anchor-id="setup">Setup</h3>
+<section id="setup" class="level2">
+<h2 class="anchored" data-anchor-id="setup">Setup</h2>
 <p>First we need to make sure python is running by importing some packages.</p>
-<div id="02bc56a0" class="cell" data-execution_count="1">
+<div id="eb42c61f" class="cell" data-execution_count="1">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> pandas <span class="im">as</span> pd</span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> matplotlib.pyplot <span class="im">as</span> plt</span>
@@ -283,23 +290,23 @@ window.Quarto = {
 </div>
 </section>
 </section>
-<section id="extended-dot-bracket-notation" class="level2">
-<h2 class="anchored" data-anchor-id="extended-dot-bracket-notation">Extended Dot-Bracket Notation</h2>
-<p>A RNA secondary structure can be shown in different ways. One common representation is the Dot-bracket notation, where each base pair is represented with a opening <code>(</code> and closing bracket <code>)</code>. Nucleotides that are unbound are displayed as simple dots <code>.</code>.</p>
+<section id="extended-dot-bracket-notation" class="level1">
+<h1>Extended Dot-Bracket Notation</h1>
+<p>A RNA secondary structure can be shown in different ways. One common representation is the dot-bracket notation, where each base pair is represented with a opening <code>(</code> and closing bracket <code>)</code>. Nucleotides that are unbound are displayed as simple dots <code>.</code>.</p>
 <p>This representation needs to be extended with more opening and closing characters when we want to deal with pseudoknots. There, we introduce the extended dot-bracket notation that uses these supported bracket types <code>()  []  {}  &lt;&gt;  Aa  Bb  Cc  Dd  Ee  Ff  Gg  Hh  Ii  Jj</code>.</p>
 <p>Lets see a test example:</p>
-<div id="49d825de" class="cell" data-execution_count="2">
+<div id="5e6d6f03" class="cell" data-execution_count="2">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>sequence <span class="op">=</span> <span class="st">"GCCCCAUGGAGGUGGCUGGGGCCAGCCUCAUGGAGGUGGCUGGGG"</span></span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>edb <span class="op">=</span> <span class="st">"...[[[[[[............((((((]]]]]]....)))))).."</span> <span class="co"># extended dot-bracket notation of RNA molecule</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 </section>
-<section id="pairtable" class="level2">
-<h2 class="anchored" data-anchor-id="pairtable">PairTable</h2>
+<section id="pairtable" class="level1">
+<h1>PairTable</h1>
 <p>A PairTable is essentially a base pair mapping function <code>bp()</code>, that maps a nucleotide at a specific index to its base pairing partner.</p>
 <p><strong>For example</strong>: in the structure <code>..[[..]]</code> the base at index 2 (zero-based indexing) pairs with base at index 7. Therefore, <code>bp(2) = 7</code> and vice verca <code>bp(7) = 2</code>.</p>
 <p>In oder to get from the extended dot-bracket notation to a PairTable representation define a function <code>dot_bracket_to_pairtable()</code>.</p>
-<section id="implementation-details" class="level3">
-<h3 class="anchored" data-anchor-id="implementation-details">Implementation details</h3>
+<section id="implementation-details" class="level2">
+<h2 class="anchored" data-anchor-id="implementation-details">Implementation details</h2>
 <p>First, we define our valid character sets (opening, closing and unpaired) and make a mapping dictionary that maps every opening/closing <em>token</em> to its corresponding closing/opening <em>kind</em> (e.g <code>round, square, curly etc</code>).</p>
 <p>Example: When we encounter a opening angle <code>&lt;</code>, our mapping dictionary <code>OPEN_TO_KIND[&lt;]</code> maps to the <code>angle</code> kind. Equivalently, <code>CLOSE_TO_KIND[&gt;]</code> maps also to the <code>angle</code> kind. This means every opening/closing token pair maps the same <em>kind</em>.</p>
 <p>Additionally, we need to keep different bracket types apart, so we can handle also pseudoknotted structures. Therefore, the basic idea is to maintain a <strong>seperate stack for each bracket kind</strong>.</p>
@@ -352,7 +359,7 @@ window.Quarto = {
 </div>
 </div>
 </div>
-<div id="f9d0347a" class="cell" data-execution_count="3">
+<div id="70e8344e" class="cell" data-execution_count="3">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> dot_bracket_to_pairtable(structure: <span class="bu">str</span>) <span class="op">-&gt;</span> <span class="bu">list</span>[<span class="bu">int</span> <span class="op">|</span> <span class="va">None</span>]:</span>
 <span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""</span></span>
 <span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="co">    Convert an extended dot-bracket string to a pair table representation.</span></span>
@@ -428,8 +435,8 @@ window.Quarto = {
 <span id="cb4-73"><a href="#cb4-73" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> pairtable</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 </section>
-<section id="example" class="level3">
-<h3 class="anchored" data-anchor-id="example">Example</h3>
+<section id="step-by-step-pairtable" class="level2">
+<h2 class="anchored" data-anchor-id="step-by-step-pairtable">Step-by-step PairTable</h2>
 <p>Lets look at a small example that converts the extended dot-bracket string <code>..[[..]]</code> into the corresponding pair table. We walk trough each step of the conversion:</p>
 <table class="caption-top table">
 <thead>
@@ -493,7 +500,7 @@ window.Quarto = {
 </table>
 <p>So, our resulting pair table should look like this: <code>[None, None, 7, 6, None, None, 3, 2]</code>.</p>
 <p>And indeed, if we run our function this is the correct pair table.</p>
-<div id="c2faba7a" class="cell" data-execution_count="4">
+<div id="0d5bb7e5" class="cell" data-execution_count="4">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>example_edb <span class="op">=</span> <span class="st">"..[[..]]"</span></span>
 <span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>example_pt <span class="op">=</span> dot_bracket_to_pairtable(example_edb)</span>
 <span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(example_pt)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
@@ -503,12 +510,100 @@ window.Quarto = {
 </div>
 </section>
 </section>
-<section id="identify-closed-regions" class="level2">
-<h2 class="anchored" data-anchor-id="identify-closed-regions">Identify closed regions</h2>
+<section id="arc-diagram" class="level1">
+<h1>Arc diagram</h1>
+<p>In order to visualize the connecting base pairs, one popular method is the so-called arc diagram. A simple implementation can be seen below. Every nucleotide type gets a different color, and the sequence is drawn as a straight line, where base pairings are shown as arc above the sequence. This immediatly shows <em>crossing base pairs</em> which indicate our pseudoknots.</p>
+<div id="bcb3ede9" class="cell" data-execution_count="5">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> matplotlib.pyplot <span class="im">as</span> plt</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> matplotlib.patches <span class="im">as</span> mpatches</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> matplotlib.patches <span class="im">import</span> Arc</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>_NT_COLORS <span class="op">=</span> {<span class="st">'A'</span>: <span class="st">'#E63946'</span>, <span class="st">'U'</span>: <span class="st">'#2A9D8F'</span>, <span class="st">'G'</span>: <span class="st">'#E9C46A'</span>, <span class="st">'C'</span>: <span class="st">'#457B9D'</span>}</span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> plot_rna_arc(</span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>    sequence: <span class="bu">str</span>,</span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>    pair_table: <span class="bu">list</span>[<span class="bu">int</span>],</span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>    <span class="op">*</span>,</span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a>    title: <span class="bu">str</span> <span class="op">=</span> <span class="st">"RNA Secondary Structure"</span>,</span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a>    figsize: <span class="bu">tuple</span>[<span class="bu">float</span>, <span class="bu">float</span>] <span class="op">=</span> (<span class="dv">14</span>, <span class="dv">5</span>),</span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a>    save_path: <span class="bu">str</span> <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> <span class="va">None</span>,</span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a>):</span>
+<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a>    n <span class="op">=</span> <span class="bu">len</span>(pair_table)</span>
+<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a>    fig, ax <span class="op">=</span> plt.subplots(figsize<span class="op">=</span>figsize)</span>
+<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-20"><a href="#cb7-20" aria-hidden="true" tabindex="-1"></a>    <span class="co"># ── backbone line ────────────────────────────────────────────────────────</span></span>
+<span id="cb7-21"><a href="#cb7-21" aria-hidden="true" tabindex="-1"></a>    ax.plot([<span class="dv">0</span>, n <span class="op">-</span> <span class="dv">1</span>], [<span class="dv">0</span>, <span class="dv">0</span>], color<span class="op">=</span><span class="st">"#444444"</span>, lw<span class="op">=</span><span class="fl">1.5</span>, zorder<span class="op">=</span><span class="dv">1</span>)</span>
+<span id="cb7-22"><a href="#cb7-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-23"><a href="#cb7-23" aria-hidden="true" tabindex="-1"></a>    <span class="co"># ── arcs for base pairs ──────────────────────────────────────────────────</span></span>
+<span id="cb7-24"><a href="#cb7-24" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(n):</span>
+<span id="cb7-25"><a href="#cb7-25" aria-hidden="true" tabindex="-1"></a>        j <span class="op">=</span> pair_table[i]</span>
+<span id="cb7-26"><a href="#cb7-26" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> j <span class="kw">is</span> <span class="kw">not</span> <span class="va">None</span> <span class="kw">and</span> j <span class="op">&gt;</span> i:                            <span class="co"># j == -1 means unpaired</span></span>
+<span id="cb7-27"><a href="#cb7-27" aria-hidden="true" tabindex="-1"></a>            center_x <span class="op">=</span> (i <span class="op">+</span> j) <span class="op">/</span> <span class="dv">2</span></span>
+<span id="cb7-28"><a href="#cb7-28" aria-hidden="true" tabindex="-1"></a>            diameter  <span class="op">=</span> j <span class="op">-</span> i</span>
+<span id="cb7-29"><a href="#cb7-29" aria-hidden="true" tabindex="-1"></a>            arc <span class="op">=</span> Arc(</span>
+<span id="cb7-30"><a href="#cb7-30" aria-hidden="true" tabindex="-1"></a>                xy<span class="op">=</span>(center_x, <span class="dv">0</span>),</span>
+<span id="cb7-31"><a href="#cb7-31" aria-hidden="true" tabindex="-1"></a>                width<span class="op">=</span>diameter,</span>
+<span id="cb7-32"><a href="#cb7-32" aria-hidden="true" tabindex="-1"></a>                height<span class="op">=</span>diameter,</span>
+<span id="cb7-33"><a href="#cb7-33" aria-hidden="true" tabindex="-1"></a>                angle<span class="op">=</span><span class="dv">0</span>,</span>
+<span id="cb7-34"><a href="#cb7-34" aria-hidden="true" tabindex="-1"></a>                theta1<span class="op">=</span><span class="dv">0</span>,</span>
+<span id="cb7-35"><a href="#cb7-35" aria-hidden="true" tabindex="-1"></a>                theta2<span class="op">=</span><span class="dv">180</span>,</span>
+<span id="cb7-36"><a href="#cb7-36" aria-hidden="true" tabindex="-1"></a>                color<span class="op">=</span><span class="st">"#264653"</span>,</span>
+<span id="cb7-37"><a href="#cb7-37" aria-hidden="true" tabindex="-1"></a>                lw<span class="op">=</span><span class="fl">1.2</span>,</span>
+<span id="cb7-38"><a href="#cb7-38" aria-hidden="true" tabindex="-1"></a>                zorder<span class="op">=</span><span class="dv">2</span>,</span>
+<span id="cb7-39"><a href="#cb7-39" aria-hidden="true" tabindex="-1"></a>            )</span>
+<span id="cb7-40"><a href="#cb7-40" aria-hidden="true" tabindex="-1"></a>            ax.add_patch(arc)</span>
+<span id="cb7-41"><a href="#cb7-41" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-42"><a href="#cb7-42" aria-hidden="true" tabindex="-1"></a>    <span class="co"># ── nucleotide nodes ─────────────────────────────────────────────────────</span></span>
+<span id="cb7-43"><a href="#cb7-43" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> i, nt <span class="kw">in</span> <span class="bu">enumerate</span>(sequence):</span>
+<span id="cb7-44"><a href="#cb7-44" aria-hidden="true" tabindex="-1"></a>        color <span class="op">=</span> _NT_COLORS.get(nt.upper(), <span class="st">"#AAAAAA"</span>)</span>
+<span id="cb7-45"><a href="#cb7-45" aria-hidden="true" tabindex="-1"></a>        ax.scatter(i, <span class="dv">0</span>, color<span class="op">=</span>color, s<span class="op">=</span><span class="dv">120</span>, zorder<span class="op">=</span><span class="dv">3</span>)</span>
+<span id="cb7-46"><a href="#cb7-46" aria-hidden="true" tabindex="-1"></a>        ax.text(i, <span class="op">-</span><span class="fl">0.6</span>, nt, ha<span class="op">=</span><span class="st">'center'</span>, va<span class="op">=</span><span class="st">'top'</span>, fontsize<span class="op">=</span><span class="dv">7</span>, color<span class="op">=</span>color)</span>
+<span id="cb7-47"><a href="#cb7-47" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-48"><a href="#cb7-48" aria-hidden="true" tabindex="-1"></a>    <span class="co"># ── cosmetics ────────────────────────────────────────────────────────────</span></span>
+<span id="cb7-49"><a href="#cb7-49" aria-hidden="true" tabindex="-1"></a>    legend_handles <span class="op">=</span> [</span>
+<span id="cb7-50"><a href="#cb7-50" aria-hidden="true" tabindex="-1"></a>        mpatches.Patch(color<span class="op">=</span>col, label<span class="op">=</span>nt)</span>
+<span id="cb7-51"><a href="#cb7-51" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> nt, col <span class="kw">in</span> _NT_COLORS.items()</span>
+<span id="cb7-52"><a href="#cb7-52" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> nt <span class="kw">in</span> sequence.upper()</span>
+<span id="cb7-53"><a href="#cb7-53" aria-hidden="true" tabindex="-1"></a>    ]</span>
+<span id="cb7-54"><a href="#cb7-54" aria-hidden="true" tabindex="-1"></a>    ax.legend(handles<span class="op">=</span>legend_handles, loc<span class="op">=</span><span class="st">'upper right'</span>, framealpha<span class="op">=</span><span class="fl">0.9</span>)</span>
+<span id="cb7-55"><a href="#cb7-55" aria-hidden="true" tabindex="-1"></a>    ax.set_title(title, fontweight<span class="op">=</span><span class="st">'bold'</span>, pad<span class="op">=</span><span class="dv">10</span>)</span>
+<span id="cb7-56"><a href="#cb7-56" aria-hidden="true" tabindex="-1"></a>    ax.set_xlim(<span class="op">-</span><span class="dv">1</span>, n)</span>
+<span id="cb7-57"><a href="#cb7-57" aria-hidden="true" tabindex="-1"></a>    ax.set_ylim(<span class="op">-</span><span class="fl">1.5</span>, n <span class="op">/</span> <span class="dv">2</span>)</span>
+<span id="cb7-58"><a href="#cb7-58" aria-hidden="true" tabindex="-1"></a>    ax.axis(<span class="st">'off'</span>)</span>
+<span id="cb7-59"><a href="#cb7-59" aria-hidden="true" tabindex="-1"></a>    fig.tight_layout()</span>
+<span id="cb7-60"><a href="#cb7-60" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-61"><a href="#cb7-61" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> save_path:</span>
+<span id="cb7-62"><a href="#cb7-62" aria-hidden="true" tabindex="-1"></a>        fig.savefig(save_path, dpi<span class="op">=</span><span class="dv">150</span>, bbox_inches<span class="op">=</span><span class="st">'tight'</span>)</span>
+<span id="cb7-63"><a href="#cb7-63" aria-hidden="true" tabindex="-1"></a>    plt.show()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<section id="example-arc-diagram" class="level2">
+<h2 class="anchored" data-anchor-id="example-arc-diagram">Example arc diagram</h2>
+<p>Our example shows the arc diagram of an RNA secondary structure from the <em>Turnip yellow mosaic virus</em> and clearly shows crossing base pairs which indicate a pseudoknot.</p>
+<div id="6ca7fde1" class="cell" data-execution_count="6">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb8"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>turnip_virus_seq <span class="op">=</span> <span class="st">"GGGAGCUCAACUCUCCCCCCCUUUUCCGAGGGUCAUCGGAACCA"</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>turnip_virus_edb <span class="op">=</span> <span class="st">"(((((.......)))))(((....[[[[[)))...]]]]]...."</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>turnip_virus_pt <span class="op">=</span> dot_bracket_to_pairtable(turnip_virus_edb)</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>plot_rna_arc(turnip_virus_seq, turnip_virus_pt, title<span class="op">=</span> <span class="st">'Turnip yellow mosaic virus - arc diagram'</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="parsing-secondary_structure_files/figure-html/cell-7-output-1.png" width="1334" height="470" class="figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+</section>
+<section id="identify-closed-regions" class="level1">
+<h1>Identify closed regions</h1>
 <p>We want to implement a parsing algorithm for closed regions of a pseudoknotted RNA secondary structure. Closed regions are defined as a region [i, j] of a seconday structure where no nucleotide <em>inside</em> this invertal base pairs with a nucleotide outside of this interval.</p>
-<section id="tree-data-structure" class="level3">
-<h3 class="anchored" data-anchor-id="tree-data-structure">Tree data structure</h3>
+<section id="tree-data-structure" class="level2">
+<h2 class="anchored" data-anchor-id="tree-data-structure">Tree data structure</h2>
 <p>We define our <em>Node</em> class that consists of the two indices <em>i</em> and <em>j</em> for the opening and closing bases, as well as a list of children <em>Nodes</em>. One <em>Node</em> represents a closed region in the secondary structure.</p>
+<p>Next, we also define the <em>ClosedRegionTree</em> class that consists of <em>n</em>, the sequence length and the <em>root</em> node that spans the entire sequence so that every real closed region is strictly inside it and becomes a child, never a replacement.</p>
+<p>The defined methods, are for adding <em>Nodes</em> in post-fix order to the root of the tree.</p>
 <div class="callout callout-style-default callout-tip callout-titled" title="What is the @dataclass decorator?">
 <div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-3-contents" aria-controls="callout-3" aria-expanded="false" aria-label="Toggle callout">
 <div class="callout-icon-container">
@@ -526,256 +621,171 @@ window.Quarto = {
 </div>
 </div>
 </div>
-<div id="c2bd9a37" class="cell" data-execution_count="5">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> __future__ <span class="im">import</span> annotations</span>
-<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> dataclasses <span class="im">import</span> dataclass, field</span>
-<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a><span class="co"># @dataclass decorator creates default methods for classes like:</span></span>
-<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a><span class="co">#  __init__, or __repr__ if these are not specifically defined.</span></span>
-<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a><span class="co"># here: __init__ is created as default, but __repr__ is defined by us!</span></span>
-<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a><span class="at">@dataclass</span> </span>
-<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> Node:</span>
-<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>    i: <span class="bu">int</span></span>
-<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>    j: <span class="bu">int</span></span>
-<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>    children: <span class="bu">list</span>[Node] <span class="op">=</span> field(default_factory<span class="op">=</span><span class="bu">list</span>)</span>
-<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> add_child(<span class="va">self</span>, child: Node) <span class="op">-&gt;</span> <span class="va">None</span>:</span>
-<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.children.append(child)</span>
-<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> <span class="fu">__iter__</span>(<span class="va">self</span>):</span>
-<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a>        <span class="co">"""Postfix (post-order) traversal: children before parent."""</span></span>
-<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> child <span class="kw">in</span> <span class="va">self</span>.children:</span>
-<span id="cb7-20"><a href="#cb7-20" aria-hidden="true" tabindex="-1"></a>            <span class="cf">yield</span> <span class="cf">from</span> child</span>
-<span id="cb7-21"><a href="#cb7-21" aria-hidden="true" tabindex="-1"></a>        <span class="cf">yield</span> <span class="va">self</span></span>
-<span id="cb7-22"><a href="#cb7-22" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-23"><a href="#cb7-23" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> <span class="fu">__repr__</span>(<span class="va">self</span>):</span>
-<span id="cb7-24"><a href="#cb7-24" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> <span class="ss">f"Node(</span><span class="sc">{</span><span class="va">self</span><span class="sc">.</span>i<span class="sc">}</span><span class="ss">, </span><span class="sc">{</span><span class="va">self</span><span class="sc">.</span>j<span class="sc">}</span><span class="ss">)"</span></span>
-<span id="cb7-25"><a href="#cb7-25" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-26"><a href="#cb7-26" aria-hidden="true" tabindex="-1"></a><span class="co"># https://mastering-python.com/blog/2023/using-post-init-with-dataclasses</span></span>
-<span id="cb7-27"><a href="#cb7-27" aria-hidden="true" tabindex="-1"></a><span class="co"># with @dataclass, we automatically init the class attributes (here: this would be n AND root), however, we import "field" to tell that we do not want root to be initalized yet!</span></span>
-<span id="cb7-28"><a href="#cb7-28" aria-hidden="true" tabindex="-1"></a><span class="co"># then we use the __post_init__ method to initalize root only AFTER __init__ (this means after initalizing n), and therefore, we initalize root</span></span>
-<span id="cb7-29"><a href="#cb7-29" aria-hidden="true" tabindex="-1"></a><span class="at">@dataclass</span></span>
-<span id="cb7-30"><a href="#cb7-30" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> ClosedRegionTree:</span>
-<span id="cb7-31"><a href="#cb7-31" aria-hidden="true" tabindex="-1"></a>    n: <span class="bu">int</span> <span class="co"># n represents the sequence length of the input structure</span></span>
-<span id="cb7-32"><a href="#cb7-32" aria-hidden="true" tabindex="-1"></a>    root: Node <span class="op">=</span> field(init<span class="op">=</span><span class="va">False</span>)</span>
-<span id="cb7-33"><a href="#cb7-33" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-34"><a href="#cb7-34" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> __post_init__(<span class="va">self</span>):</span>
-<span id="cb7-35"><a href="#cb7-35" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Sentinel root [0, n+1] as described in the procedure</span></span>
-<span id="cb7-36"><a href="#cb7-36" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.root <span class="op">=</span> Node(<span class="op">-</span><span class="dv">1</span>, <span class="va">self</span>.n)</span>
-<span id="cb7-37"><a href="#cb7-37" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-38"><a href="#cb7-38" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> _last_child(<span class="va">self</span>) <span class="op">-&gt;</span> Node <span class="op">|</span> <span class="va">None</span>:</span>
-<span id="cb7-39"><a href="#cb7-39" aria-hidden="true" tabindex="-1"></a>        <span class="co">"""Child of root with largest left border, or None if no children."""</span></span>
-<span id="cb7-40"><a href="#cb7-40" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> <span class="va">self</span>.root.children[<span class="op">-</span><span class="dv">1</span>] <span class="cf">if</span> <span class="va">self</span>.root.children <span class="cf">else</span> <span class="va">None</span></span>
-<span id="cb7-41"><a href="#cb7-41" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-42"><a href="#cb7-42" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> add(<span class="va">self</span>, i: <span class="bu">int</span>, j: <span class="bu">int</span>) <span class="op">-&gt;</span> <span class="va">None</span>:</span>
-<span id="cb7-43"><a href="#cb7-43" aria-hidden="true" tabindex="-1"></a>        <span class="co">"""Add closed region [i, j] in postfix order (procedure Add-To-Tree)."""</span></span>
-<span id="cb7-44"><a href="#cb7-44" aria-hidden="true" tabindex="-1"></a>        node <span class="op">=</span> Node(i, j)                          <span class="co"># step 1</span></span>
-<span id="cb7-45"><a href="#cb7-45" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-46"><a href="#cb7-46" aria-hidden="true" tabindex="-1"></a>        current <span class="op">=</span> <span class="va">self</span>._last_child()               <span class="co"># step 2</span></span>
-<span id="cb7-47"><a href="#cb7-47" aria-hidden="true" tabindex="-1"></a>        sentinel <span class="op">=</span> Node(<span class="dv">0</span>, <span class="dv">0</span>)</span>
-<span id="cb7-48"><a href="#cb7-48" aria-hidden="true" tabindex="-1"></a>        ab <span class="op">=</span> current <span class="cf">if</span> current <span class="kw">is</span> <span class="kw">not</span> <span class="va">None</span> <span class="cf">else</span> sentinel</span>
-<span id="cb7-49"><a href="#cb7-49" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-50"><a href="#cb7-50" aria-hidden="true" tabindex="-1"></a>        <span class="cf">while</span> ab.i <span class="op">&gt;</span> i:                            <span class="co"># step 3</span></span>
-<span id="cb7-51"><a href="#cb7-51" aria-hidden="true" tabindex="-1"></a>            node.add_child(ab)                     <span class="co"># step 4</span></span>
-<span id="cb7-52"><a href="#cb7-52" aria-hidden="true" tabindex="-1"></a>            <span class="va">self</span>.root.children.pop()</span>
-<span id="cb7-53"><a href="#cb7-53" aria-hidden="true" tabindex="-1"></a>            current <span class="op">=</span> <span class="va">self</span>._last_child()           <span class="co"># step 5</span></span>
-<span id="cb7-54"><a href="#cb7-54" aria-hidden="true" tabindex="-1"></a>            ab <span class="op">=</span> current <span class="cf">if</span> current <span class="kw">is</span> <span class="kw">not</span> <span class="va">None</span> <span class="cf">else</span> sentinel</span>
-<span id="cb7-55"><a href="#cb7-55" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-56"><a href="#cb7-56" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.root.add_child(node)                  <span class="co"># step 7</span></span>
-<span id="cb7-57"><a href="#cb7-57" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-58"><a href="#cb7-58" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> postfix(<span class="va">self</span>) <span class="op">-&gt;</span> <span class="bu">list</span>[Node]:</span>
-<span id="cb7-59"><a href="#cb7-59" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> <span class="bu">list</span>(<span class="va">self</span>.root)</span>
-<span id="cb7-60"><a href="#cb7-60" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-61"><a href="#cb7-61" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> display(<span class="va">self</span>) <span class="op">-&gt;</span> <span class="va">None</span>:</span>
-<span id="cb7-62"><a href="#cb7-62" aria-hidden="true" tabindex="-1"></a>        <span class="kw">def</span> _display(node: Node, prefix: <span class="bu">str</span> <span class="op">=</span> <span class="st">""</span>, is_last: <span class="bu">bool</span> <span class="op">=</span> <span class="va">True</span>) <span class="op">-&gt;</span> <span class="va">None</span>:</span>
-<span id="cb7-63"><a href="#cb7-63" aria-hidden="true" tabindex="-1"></a>            connector <span class="op">=</span> <span class="st">"└── "</span> <span class="cf">if</span> is_last <span class="cf">else</span> <span class="st">"├── "</span></span>
-<span id="cb7-64"><a href="#cb7-64" aria-hidden="true" tabindex="-1"></a>            <span class="bu">print</span>(prefix <span class="op">+</span> connector <span class="op">+</span> <span class="ss">f"[</span><span class="sc">{</span>node<span class="sc">.</span>i<span class="sc">}</span><span class="ss">, </span><span class="sc">{</span>node<span class="sc">.</span>j<span class="sc">}</span><span class="ss">]"</span>)</span>
-<span id="cb7-65"><a href="#cb7-65" aria-hidden="true" tabindex="-1"></a>            child_prefix <span class="op">=</span> prefix <span class="op">+</span> (<span class="st">"    "</span> <span class="cf">if</span> is_last <span class="cf">else</span> <span class="st">"│   "</span>)</span>
-<span id="cb7-66"><a href="#cb7-66" aria-hidden="true" tabindex="-1"></a>            <span class="cf">for</span> i, child <span class="kw">in</span> <span class="bu">enumerate</span>(node.children):</span>
-<span id="cb7-67"><a href="#cb7-67" aria-hidden="true" tabindex="-1"></a>                _display(child, child_prefix, is_last<span class="op">=</span>(i <span class="op">==</span> <span class="bu">len</span>(node.children) <span class="op">-</span> <span class="dv">1</span>))</span>
-<span id="cb7-68"><a href="#cb7-68" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-69"><a href="#cb7-69" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="ss">f"[</span><span class="sc">{</span><span class="va">self</span><span class="sc">.</span>root<span class="sc">.</span>i<span class="sc">}</span><span class="ss">, </span><span class="sc">{</span><span class="va">self</span><span class="sc">.</span>root<span class="sc">.</span>j<span class="sc">}</span><span class="ss">]"</span>)</span>
-<span id="cb7-70"><a href="#cb7-70" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> i, child <span class="kw">in</span> <span class="bu">enumerate</span>(<span class="va">self</span>.root.children):</span>
-<span id="cb7-71"><a href="#cb7-71" aria-hidden="true" tabindex="-1"></a>            _display(child, <span class="st">""</span>, is_last<span class="op">=</span>(i <span class="op">==</span> <span class="bu">len</span>(<span class="va">self</span>.root.children) <span class="op">-</span> <span class="dv">1</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div id="07144572" class="cell" data-execution_count="7">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb9"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> __future__ <span class="im">import</span> annotations</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> dataclasses <span class="im">import</span> dataclass, field</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a><span class="co"># see @dataclass tip above</span></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a><span class="at">@dataclass</span> </span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> Node:</span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>    i: <span class="bu">int</span></span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>    j: <span class="bu">int</span></span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>    children: <span class="bu">list</span>[Node] <span class="op">=</span> field(default_factory<span class="op">=</span><span class="bu">list</span>)</span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> add_child(<span class="va">self</span>, child: Node) <span class="op">-&gt;</span> <span class="va">None</span>:</span>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.children.append(child)</span>
+<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> <span class="fu">__iter__</span>(<span class="va">self</span>):</span>
+<span id="cb9-16"><a href="#cb9-16" aria-hidden="true" tabindex="-1"></a>        <span class="co">"""Postfix (post-order) traversal: children before parent."""</span></span>
+<span id="cb9-17"><a href="#cb9-17" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> child <span class="kw">in</span> <span class="va">self</span>.children:</span>
+<span id="cb9-18"><a href="#cb9-18" aria-hidden="true" tabindex="-1"></a>            <span class="cf">yield</span> <span class="cf">from</span> child</span>
+<span id="cb9-19"><a href="#cb9-19" aria-hidden="true" tabindex="-1"></a>        <span class="cf">yield</span> <span class="va">self</span></span>
+<span id="cb9-20"><a href="#cb9-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-21"><a href="#cb9-21" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> <span class="fu">__repr__</span>(<span class="va">self</span>):</span>
+<span id="cb9-22"><a href="#cb9-22" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> <span class="ss">f"Node(</span><span class="sc">{</span><span class="va">self</span><span class="sc">.</span>i<span class="sc">}</span><span class="ss">, </span><span class="sc">{</span><span class="va">self</span><span class="sc">.</span>j<span class="sc">}</span><span class="ss">)"</span></span>
+<span id="cb9-23"><a href="#cb9-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-24"><a href="#cb9-24" aria-hidden="true" tabindex="-1"></a><span class="co"># @dataclass generates __init__ for all fields in order. </span></span>
+<span id="cb9-25"><a href="#cb9-25" aria-hidden="true" tabindex="-1"></a><span class="co"># field(init=False) excludes root from that generated __init__, so the caller only passes n.</span></span>
+<span id="cb9-26"><a href="#cb9-26" aria-hidden="true" tabindex="-1"></a><span class="co"># __post_init__ then runs automatically once n is set, using it to build root.</span></span>
+<span id="cb9-27"><a href="#cb9-27" aria-hidden="true" tabindex="-1"></a><span class="at">@dataclass</span></span>
+<span id="cb9-28"><a href="#cb9-28" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> ClosedRegionTree:</span>
+<span id="cb9-29"><a href="#cb9-29" aria-hidden="true" tabindex="-1"></a>    n: <span class="bu">int</span> <span class="co"># n represents the sequence length of the input structure</span></span>
+<span id="cb9-30"><a href="#cb9-30" aria-hidden="true" tabindex="-1"></a>    root: Node <span class="op">=</span> field(init<span class="op">=</span><span class="va">False</span>)</span>
+<span id="cb9-31"><a href="#cb9-31" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-32"><a href="#cb9-32" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> __post_init__(<span class="va">self</span>):</span>
+<span id="cb9-33"><a href="#cb9-33" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Sentinel root [-1, n] spans the entire sequence so that every real</span></span>
+<span id="cb9-34"><a href="#cb9-34" aria-hidden="true" tabindex="-1"></a>        <span class="co"># closed region is strictly inside it and becomes a child, never a replacement.</span></span>
+<span id="cb9-35"><a href="#cb9-35" aria-hidden="true" tabindex="-1"></a>     <span class="va">self</span>.root <span class="op">=</span> Node(<span class="op">-</span><span class="dv">1</span>, <span class="va">self</span>.n)</span>
+<span id="cb9-36"><a href="#cb9-36" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-37"><a href="#cb9-37" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> _last_child(<span class="va">self</span>) <span class="op">-&gt;</span> Node <span class="op">|</span> <span class="va">None</span>:</span>
+<span id="cb9-38"><a href="#cb9-38" aria-hidden="true" tabindex="-1"></a>        <span class="co">"""Child of root with largest left border, or None if no children."""</span></span>
+<span id="cb9-39"><a href="#cb9-39" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> <span class="va">self</span>.root.children[<span class="op">-</span><span class="dv">1</span>] <span class="cf">if</span> <span class="va">self</span>.root.children <span class="cf">else</span> <span class="va">None</span></span>
+<span id="cb9-40"><a href="#cb9-40" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-41"><a href="#cb9-41" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> add(<span class="va">self</span>, i: <span class="bu">int</span>, j: <span class="bu">int</span>) <span class="op">-&gt;</span> <span class="va">None</span>:</span>
+<span id="cb9-42"><a href="#cb9-42" aria-hidden="true" tabindex="-1"></a>        <span class="co">"""Add closed region [i, j] in postfix order (procedure Add-To-Tree)."""</span></span>
+<span id="cb9-43"><a href="#cb9-43" aria-hidden="true" tabindex="-1"></a>        node <span class="op">=</span> Node(i, j)                          <span class="co"># step 1</span></span>
+<span id="cb9-44"><a href="#cb9-44" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-45"><a href="#cb9-45" aria-hidden="true" tabindex="-1"></a>        current <span class="op">=</span> <span class="va">self</span>._last_child()               <span class="co"># step 2</span></span>
+<span id="cb9-46"><a href="#cb9-46" aria-hidden="true" tabindex="-1"></a>        sentinel <span class="op">=</span> Node(<span class="dv">0</span>, <span class="dv">0</span>)</span>
+<span id="cb9-47"><a href="#cb9-47" aria-hidden="true" tabindex="-1"></a>        ab <span class="op">=</span> current <span class="cf">if</span> current <span class="kw">is</span> <span class="kw">not</span> <span class="va">None</span> <span class="cf">else</span> sentinel</span>
+<span id="cb9-48"><a href="#cb9-48" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-49"><a href="#cb9-49" aria-hidden="true" tabindex="-1"></a>        <span class="cf">while</span> ab.i <span class="op">&gt;</span> i:                            <span class="co"># step 3</span></span>
+<span id="cb9-50"><a href="#cb9-50" aria-hidden="true" tabindex="-1"></a>            node.add_child(ab)                     <span class="co"># step 4</span></span>
+<span id="cb9-51"><a href="#cb9-51" aria-hidden="true" tabindex="-1"></a>            <span class="va">self</span>.root.children.pop()</span>
+<span id="cb9-52"><a href="#cb9-52" aria-hidden="true" tabindex="-1"></a>            current <span class="op">=</span> <span class="va">self</span>._last_child()           <span class="co"># step 5</span></span>
+<span id="cb9-53"><a href="#cb9-53" aria-hidden="true" tabindex="-1"></a>            ab <span class="op">=</span> current <span class="cf">if</span> current <span class="kw">is</span> <span class="kw">not</span> <span class="va">None</span> <span class="cf">else</span> sentinel</span>
+<span id="cb9-54"><a href="#cb9-54" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-55"><a href="#cb9-55" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.root.add_child(node)                  <span class="co"># step 7</span></span>
+<span id="cb9-56"><a href="#cb9-56" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-57"><a href="#cb9-57" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> postfix(<span class="va">self</span>) <span class="op">-&gt;</span> <span class="bu">list</span>[Node]:</span>
+<span id="cb9-58"><a href="#cb9-58" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> <span class="bu">list</span>(<span class="va">self</span>.root)</span>
+<span id="cb9-59"><a href="#cb9-59" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-60"><a href="#cb9-60" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> display(<span class="va">self</span>) <span class="op">-&gt;</span> <span class="va">None</span>:</span>
+<span id="cb9-61"><a href="#cb9-61" aria-hidden="true" tabindex="-1"></a>        <span class="kw">def</span> _display(node: Node, prefix: <span class="bu">str</span> <span class="op">=</span> <span class="st">""</span>, is_last: <span class="bu">bool</span> <span class="op">=</span> <span class="va">True</span>) <span class="op">-&gt;</span> <span class="va">None</span>:</span>
+<span id="cb9-62"><a href="#cb9-62" aria-hidden="true" tabindex="-1"></a>            connector <span class="op">=</span> <span class="st">"└── "</span> <span class="cf">if</span> is_last <span class="cf">else</span> <span class="st">"├── "</span></span>
+<span id="cb9-63"><a href="#cb9-63" aria-hidden="true" tabindex="-1"></a>            <span class="bu">print</span>(prefix <span class="op">+</span> connector <span class="op">+</span> <span class="ss">f"[</span><span class="sc">{</span>node<span class="sc">.</span>i<span class="sc">}</span><span class="ss">, </span><span class="sc">{</span>node<span class="sc">.</span>j<span class="sc">}</span><span class="ss">]"</span>)</span>
+<span id="cb9-64"><a href="#cb9-64" aria-hidden="true" tabindex="-1"></a>            child_prefix <span class="op">=</span> prefix <span class="op">+</span> (<span class="st">"    "</span> <span class="cf">if</span> is_last <span class="cf">else</span> <span class="st">"│   "</span>)</span>
+<span id="cb9-65"><a href="#cb9-65" aria-hidden="true" tabindex="-1"></a>            <span class="cf">for</span> i, child <span class="kw">in</span> <span class="bu">enumerate</span>(node.children):</span>
+<span id="cb9-66"><a href="#cb9-66" aria-hidden="true" tabindex="-1"></a>                _display(child, child_prefix, is_last<span class="op">=</span>(i <span class="op">==</span> <span class="bu">len</span>(node.children) <span class="op">-</span> <span class="dv">1</span>))</span>
+<span id="cb9-67"><a href="#cb9-67" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-68"><a href="#cb9-68" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="ss">f"[</span><span class="sc">{</span><span class="va">self</span><span class="sc">.</span>root<span class="sc">.</span>i<span class="sc">}</span><span class="ss">, </span><span class="sc">{</span><span class="va">self</span><span class="sc">.</span>root<span class="sc">.</span>j<span class="sc">}</span><span class="ss">]"</span>)</span>
+<span id="cb9-69"><a href="#cb9-69" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> i, child <span class="kw">in</span> <span class="bu">enumerate</span>(<span class="va">self</span>.root.children):</span>
+<span id="cb9-70"><a href="#cb9-70" aria-hidden="true" tabindex="-1"></a>            _display(child, <span class="st">""</span>, is_last<span class="op">=</span>(i <span class="op">==</span> <span class="bu">len</span>(<span class="va">self</span>.root.children) <span class="op">-</span> <span class="dv">1</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 </section>
-<section id="tree-building-function-parsing-function" class="level3">
-<h3 class="anchored" data-anchor-id="tree-building-function-parsing-function">Tree building function (parsing function)</h3>
-<div id="a43fcc32" class="cell" data-execution_count="7">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb8"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> BuildClosedRegionsTree(structure: <span class="bu">str</span>):</span>
-<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>    n <span class="op">=</span> <span class="bu">len</span>(structure)</span>
-<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>    pt <span class="op">=</span> dot_bracket_to_pairtable(structure)</span>
-<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>    tree <span class="op">=</span> ClosedRegionTree(n)</span>
-<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>    stack <span class="op">=</span> []</span>
-<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> i, char <span class="kw">in</span> <span class="bu">enumerate</span>(structure):</span>
-<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>        <span class="co"># pt[i] is the index of the partner nucleotide, or None if unpaired</span></span>
-<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> pt[i] <span class="kw">is</span> <span class="kw">not</span> <span class="va">None</span>:</span>
-<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a>            <span class="co"># Case 1: Opening bracket (i &lt; pt[i])</span></span>
-<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a>            <span class="cf">if</span> i <span class="op">&lt;</span> pt[i]:</span>
-<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a>                stack.append([i, pt[i]])</span>
-<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a>            </span>
-<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a>            <span class="co"># Case 2: Closing bracket (pt[i] &lt; i)</span></span>
-<span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a>            <span class="co"># This logic handles interval merging for pseudoknots</span></span>
-<span id="cb8-17"><a href="#cb8-17" aria-hidden="true" tabindex="-1"></a>            <span class="cf">elif</span> pt[i] <span class="op">&lt;</span> i:</span>
-<span id="cb8-18"><a href="#cb8-18" aria-hidden="true" tabindex="-1"></a>                E <span class="op">=</span> i</span>
-<span id="cb8-19"><a href="#cb8-19" aria-hidden="true" tabindex="-1"></a>                <span class="co"># explicitly check for pseudoknot crossing</span></span>
-<span id="cb8-20"><a href="#cb8-20" aria-hidden="true" tabindex="-1"></a>                <span class="co"># even though on properly defined pair tables, the for loop would already poped stack entries where top.E &lt;= i</span></span>
-<span id="cb8-21"><a href="#cb8-21" aria-hidden="true" tabindex="-1"></a>                <span class="cf">while</span> stack <span class="kw">and</span> stack[<span class="op">-</span><span class="dv">1</span>][<span class="dv">1</span>] <span class="op">&gt;</span> i <span class="kw">and</span> stack[<span class="op">-</span><span class="dv">1</span>][<span class="dv">0</span>] <span class="op">&gt;</span> pt[i]:</span>
-<span id="cb8-22"><a href="#cb8-22" aria-hidden="true" tabindex="-1"></a>                    _, topE <span class="op">=</span> stack.pop()</span>
-<span id="cb8-23"><a href="#cb8-23" aria-hidden="true" tabindex="-1"></a>                    E <span class="op">=</span> <span class="bu">max</span>(E, topE)</span>
-<span id="cb8-24"><a href="#cb8-24" aria-hidden="true" tabindex="-1"></a>                </span>
-<span id="cb8-25"><a href="#cb8-25" aria-hidden="true" tabindex="-1"></a>                <span class="co"># If there is still a base pair on the stack, </span></span>
-<span id="cb8-26"><a href="#cb8-26" aria-hidden="true" tabindex="-1"></a>                <span class="co"># update its end-point to the furthest point reached (E)</span></span>
-<span id="cb8-27"><a href="#cb8-27" aria-hidden="true" tabindex="-1"></a>                <span class="cf">if</span> stack:</span>
-<span id="cb8-28"><a href="#cb8-28" aria-hidden="true" tabindex="-1"></a>                    stack[<span class="op">-</span><span class="dv">1</span>][<span class="dv">1</span>] <span class="op">=</span> <span class="bu">max</span>(E, stack[<span class="op">-</span><span class="dv">1</span>][<span class="dv">1</span>])</span>
-<span id="cb8-29"><a href="#cb8-29" aria-hidden="true" tabindex="-1"></a>            </span>
-<span id="cb8-30"><a href="#cb8-30" aria-hidden="true" tabindex="-1"></a>            <span class="co"># Case 3: Check if the current nucleotide closes the region on top of stack</span></span>
-<span id="cb8-31"><a href="#cb8-31" aria-hidden="true" tabindex="-1"></a>            <span class="cf">if</span> stack <span class="kw">and</span> i <span class="op">==</span> stack[<span class="op">-</span><span class="dv">1</span>][<span class="dv">1</span>]:</span>
-<span id="cb8-32"><a href="#cb8-32" aria-hidden="true" tabindex="-1"></a>                idx, jdx <span class="op">=</span> stack.pop()</span>
-<span id="cb8-33"><a href="#cb8-33" aria-hidden="true" tabindex="-1"></a>                tree.add(idx, jdx)</span>
-<span id="cb8-34"><a href="#cb8-34" aria-hidden="true" tabindex="-1"></a>                </span>
-<span id="cb8-35"><a href="#cb8-35" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> tree</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<section id="tree-building-function-parsing-function" class="level2">
+<h2 class="anchored" data-anchor-id="tree-building-function-parsing-function">Tree building function (parsing function)</h2>
+<p>In order to build the closed region tree, we now need a function that serves as <em>parser</em> for our structure.</p>
+<div class="callout callout-style-default callout-tip callout-titled" title="What is a Parser?">
+<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-4-contents" aria-controls="callout-4" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Tip</span>What is a Parser?
+</div>
+<div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
+</div>
+<div id="callout-4" class="callout-4-contents callout-collapse collapse">
+<div class="callout-body-container callout-body">
+<p>A parser is a program that reads a <em>sequence of symbols</em> and determines its structure according to a <em>formal grammar</em>. It transforms raw input — such as a string of characters — into a <em>structured representation</em> (like a tree) that captures the relationships between the symbols. For more information, see <a href="https://en.wikipedia.org/wiki/Parsing">Wikipedia</a>.</p>
+</div>
+</div>
+</div>
+<p>In our case, this means our <code>BuildClosedRegionsTree</code> function serves as a parser, that takes as input the <strong>extended dot-bracket string</strong> (=<em>sequence of symbols</em>), and returns the <strong>closed region tree</strong> (=<em>structured representation</em>) as an output according to the <strong>extended dot-bracket notation rules</strong> (=<em>formal grammar</em>).</p>
+<p>This whole process of determining the structure of the tree is called <em>parsing</em>.</p>
+<section id="details" class="level3">
+<h3 class="anchored" data-anchor-id="details">Details</h3>
+<p><code>BuildClosedRegionsTree</code> walks through the exteneded dot-bracket string one character at a time and incrementally builds the closed region tree. For every paired position, it either pushes an opening bracket onto a stack (recording the interval <code>[i, pt[i]]</code> for later), or processes a closing bracket by checking whether the current pair crosses any existing intervals on the stack. That crossing check is the <strong>pseudoknot detection</strong>:</p>
+<ul>
+<li>if the top of the stack ends beyond the current closing position and starts inside the current pair, the two intervals genuinely interleave, so they get merged into a single wider interval by tracking the furthest right boundary <code>E</code> seen so far.</li>
+</ul>
+<p>Once an interval on the stack is fully closed — meaning the current position <code>i</code> matches the right boundary of the stack top — it gets popped and handed to <code>tree.add()</code>, which slots it into the correct position in the tree using the postfix property: any previously attached node with a larger left border must be a child of the new node, not a sibling. The result is a tree where each node represents one closed region, nested exactly according to the containment structure of the input.</p>
+<div id="de670960" class="cell" data-execution_count="8">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb10"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> BuildClosedRegionsTree(structure: <span class="bu">str</span>):</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>    n <span class="op">=</span> <span class="bu">len</span>(structure)</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>    pt <span class="op">=</span> dot_bracket_to_pairtable(structure)</span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>    tree <span class="op">=</span> ClosedRegionTree(n)</span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>    stack <span class="op">=</span> []</span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> i, char <span class="kw">in</span> <span class="bu">enumerate</span>(structure):</span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>        <span class="co"># pt[i] is the index of the partner nucleotide, or None if unpaired</span></span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> pt[i] <span class="kw">is</span> <span class="kw">not</span> <span class="va">None</span>:</span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a>            <span class="co"># Case 1: Opening bracket (i &lt; pt[i])</span></span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a>            <span class="cf">if</span> i <span class="op">&lt;</span> pt[i]:</span>
+<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a>                stack.append([i, pt[i]])</span>
+<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a>            </span>
+<span id="cb10-15"><a href="#cb10-15" aria-hidden="true" tabindex="-1"></a>            <span class="co"># Case 2: Closing bracket (pt[i] &lt; i)</span></span>
+<span id="cb10-16"><a href="#cb10-16" aria-hidden="true" tabindex="-1"></a>            <span class="co"># This logic handles interval merging for pseudoknots</span></span>
+<span id="cb10-17"><a href="#cb10-17" aria-hidden="true" tabindex="-1"></a>            <span class="cf">elif</span> pt[i] <span class="op">&lt;</span> i:</span>
+<span id="cb10-18"><a href="#cb10-18" aria-hidden="true" tabindex="-1"></a>                E <span class="op">=</span> i</span>
+<span id="cb10-19"><a href="#cb10-19" aria-hidden="true" tabindex="-1"></a>                <span class="co"># explicitly check for pseudoknot crossing</span></span>
+<span id="cb10-20"><a href="#cb10-20" aria-hidden="true" tabindex="-1"></a>                <span class="co"># even though on properly defined pair tables, the for loop would already poped stack entries where top.E &lt;= i</span></span>
+<span id="cb10-21"><a href="#cb10-21" aria-hidden="true" tabindex="-1"></a>                <span class="cf">while</span> stack <span class="kw">and</span> stack[<span class="op">-</span><span class="dv">1</span>][<span class="dv">1</span>] <span class="op">&gt;</span> i <span class="kw">and</span> stack[<span class="op">-</span><span class="dv">1</span>][<span class="dv">0</span>] <span class="op">&gt;</span> pt[i]:</span>
+<span id="cb10-22"><a href="#cb10-22" aria-hidden="true" tabindex="-1"></a>                    _, topE <span class="op">=</span> stack.pop()</span>
+<span id="cb10-23"><a href="#cb10-23" aria-hidden="true" tabindex="-1"></a>                    E <span class="op">=</span> <span class="bu">max</span>(E, topE)</span>
+<span id="cb10-24"><a href="#cb10-24" aria-hidden="true" tabindex="-1"></a>                </span>
+<span id="cb10-25"><a href="#cb10-25" aria-hidden="true" tabindex="-1"></a>                <span class="co"># If there is still a base pair on the stack, </span></span>
+<span id="cb10-26"><a href="#cb10-26" aria-hidden="true" tabindex="-1"></a>                <span class="co"># update its end-point to the furthest point reached (E)</span></span>
+<span id="cb10-27"><a href="#cb10-27" aria-hidden="true" tabindex="-1"></a>                <span class="cf">if</span> stack:</span>
+<span id="cb10-28"><a href="#cb10-28" aria-hidden="true" tabindex="-1"></a>                    stack[<span class="op">-</span><span class="dv">1</span>][<span class="dv">1</span>] <span class="op">=</span> <span class="bu">max</span>(E, stack[<span class="op">-</span><span class="dv">1</span>][<span class="dv">1</span>])</span>
+<span id="cb10-29"><a href="#cb10-29" aria-hidden="true" tabindex="-1"></a>            </span>
+<span id="cb10-30"><a href="#cb10-30" aria-hidden="true" tabindex="-1"></a>            <span class="co"># Case 3: Check if the current nucleotide closes the region on top of stack</span></span>
+<span id="cb10-31"><a href="#cb10-31" aria-hidden="true" tabindex="-1"></a>            <span class="cf">if</span> stack <span class="kw">and</span> i <span class="op">==</span> stack[<span class="op">-</span><span class="dv">1</span>][<span class="dv">1</span>]:</span>
+<span id="cb10-32"><a href="#cb10-32" aria-hidden="true" tabindex="-1"></a>                idx, jdx <span class="op">=</span> stack.pop()</span>
+<span id="cb10-33"><a href="#cb10-33" aria-hidden="true" tabindex="-1"></a>                tree.add(idx, jdx)</span>
+<span id="cb10-34"><a href="#cb10-34" aria-hidden="true" tabindex="-1"></a>                </span>
+<span id="cb10-35"><a href="#cb10-35" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> tree</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 </section>
 <section id="example-tree" class="level3">
 <h3 class="anchored" data-anchor-id="example-tree">Example Tree</h3>
-<div id="427f7e55" class="cell" data-execution_count="8">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb9"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>turnip_virus_structure <span class="op">=</span> <span class="st">"(((((.......)))))(((....[[[[[)))...]]]]]...."</span></span>
-<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>test_tree <span class="op">=</span> BuildClosedRegionsTree(turnip_virus_structure)</span>
-<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"Turnip Virus Tree:"</span>)</span>
-<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>test_tree.display()</span>
-<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"</span><span class="ch">\n\n</span><span class="st">"</span>)</span>
-<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>another_example <span class="op">=</span> <span class="st">"(((((.(..((((........)))).(((((.......))))).....(((((.......)))))).)))))...."</span></span>
-<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>test_tree2 <span class="op">=</span> BuildClosedRegionsTree(another_example)</span>
-<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"Tree:"</span>)</span>
-<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a>test_tree2.display()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Here, we see the closed region tree of our <em>Turnip yellow mosaic virus</em>, shown with our<code>.display()</code> method. We defined our extended dot-bracket string earlier already, but is shown as a comment again.</p>
+<div id="9c65f4c5" class="cell" data-execution_count="9">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb11"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="co">#turnip_virus_edb = "(((((.......)))))(((....[[[[[)))...]]]]]...."</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>turnip_tree <span class="op">=</span> BuildClosedRegionsTree(turnip_virus_edb)</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"Turnip yellow mosaic virus:"</span>)</span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>turnip_tree.display()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>Turnip Virus Tree:
+<pre><code>Turnip yellow mosaic virus:
 [-1, 44]
 ├── [0, 16]
 │   └── [1, 15]
 │       └── [2, 14]
 │           └── [3, 13]
 │               └── [4, 12]
-└── [17, 39]
-
-
-
-Tree:
-[-1, 76]
-└── [0, 71]
-    └── [1, 70]
-        └── [2, 69]
-            └── [3, 68]
-                └── [4, 67]
-                    └── [6, 65]
-                        ├── [48, 64]
-                        │   └── [49, 63]
-                        │       └── [50, 62]
-                        │           └── [51, 61]
-                        │               └── [52, 60]
-                        ├── [26, 42]
-                        │   └── [27, 41]
-                        │       └── [28, 40]
-                        │           └── [29, 39]
-                        │               └── [30, 38]
-                        └── [9, 24]
-                            └── [10, 23]
-                                └── [11, 22]
-                                    └── [12, 21]</code></pre>
-</div>
-</div>
-</section>
-<section id="arc-diagram" class="level3">
-<h3 class="anchored" data-anchor-id="arc-diagram">arc diagram</h3>
-<div id="cdf6b14c" class="cell" data-execution_count="9">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb11"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> matplotlib.pyplot <span class="im">as</span> plt</span>
-<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> matplotlib.patches <span class="im">as</span> mpatches</span>
-<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> matplotlib.patches <span class="im">import</span> Arc</span>
-<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>_NT_COLORS <span class="op">=</span> {<span class="st">'A'</span>: <span class="st">'#E63946'</span>, <span class="st">'U'</span>: <span class="st">'#2A9D8F'</span>, <span class="st">'G'</span>: <span class="st">'#E9C46A'</span>, <span class="st">'C'</span>: <span class="st">'#457B9D'</span>}</span>
-<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> plot_rna_arc(</span>
-<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a>    sequence: <span class="bu">str</span>,</span>
-<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a>    pair_table: <span class="bu">list</span>[<span class="bu">int</span>],</span>
-<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a>    <span class="op">*</span>,</span>
-<span id="cb11-13"><a href="#cb11-13" aria-hidden="true" tabindex="-1"></a>    title: <span class="bu">str</span> <span class="op">=</span> <span class="st">"RNA Secondary Structure"</span>,</span>
-<span id="cb11-14"><a href="#cb11-14" aria-hidden="true" tabindex="-1"></a>    figsize: <span class="bu">tuple</span>[<span class="bu">float</span>, <span class="bu">float</span>] <span class="op">=</span> (<span class="dv">14</span>, <span class="dv">5</span>),</span>
-<span id="cb11-15"><a href="#cb11-15" aria-hidden="true" tabindex="-1"></a>    save_path: <span class="bu">str</span> <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> <span class="va">None</span>,</span>
-<span id="cb11-16"><a href="#cb11-16" aria-hidden="true" tabindex="-1"></a>):</span>
-<span id="cb11-17"><a href="#cb11-17" aria-hidden="true" tabindex="-1"></a>    n <span class="op">=</span> <span class="bu">len</span>(pair_table)</span>
-<span id="cb11-18"><a href="#cb11-18" aria-hidden="true" tabindex="-1"></a>    fig, ax <span class="op">=</span> plt.subplots(figsize<span class="op">=</span>figsize)</span>
-<span id="cb11-19"><a href="#cb11-19" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-20"><a href="#cb11-20" aria-hidden="true" tabindex="-1"></a>    <span class="co"># ── backbone line ────────────────────────────────────────────────────────</span></span>
-<span id="cb11-21"><a href="#cb11-21" aria-hidden="true" tabindex="-1"></a>    ax.plot([<span class="dv">0</span>, n <span class="op">-</span> <span class="dv">1</span>], [<span class="dv">0</span>, <span class="dv">0</span>], color<span class="op">=</span><span class="st">"#444444"</span>, lw<span class="op">=</span><span class="fl">1.5</span>, zorder<span class="op">=</span><span class="dv">1</span>)</span>
-<span id="cb11-22"><a href="#cb11-22" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-23"><a href="#cb11-23" aria-hidden="true" tabindex="-1"></a>    <span class="co"># ── arcs for base pairs ──────────────────────────────────────────────────</span></span>
-<span id="cb11-24"><a href="#cb11-24" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(n):</span>
-<span id="cb11-25"><a href="#cb11-25" aria-hidden="true" tabindex="-1"></a>        j <span class="op">=</span> pair_table[i]</span>
-<span id="cb11-26"><a href="#cb11-26" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> j <span class="kw">is</span> <span class="kw">not</span> <span class="va">None</span> <span class="kw">and</span> j <span class="op">&gt;</span> i:                            <span class="co"># j == -1 means unpaired</span></span>
-<span id="cb11-27"><a href="#cb11-27" aria-hidden="true" tabindex="-1"></a>            center_x <span class="op">=</span> (i <span class="op">+</span> j) <span class="op">/</span> <span class="dv">2</span></span>
-<span id="cb11-28"><a href="#cb11-28" aria-hidden="true" tabindex="-1"></a>            diameter  <span class="op">=</span> j <span class="op">-</span> i</span>
-<span id="cb11-29"><a href="#cb11-29" aria-hidden="true" tabindex="-1"></a>            arc <span class="op">=</span> Arc(</span>
-<span id="cb11-30"><a href="#cb11-30" aria-hidden="true" tabindex="-1"></a>                xy<span class="op">=</span>(center_x, <span class="dv">0</span>),</span>
-<span id="cb11-31"><a href="#cb11-31" aria-hidden="true" tabindex="-1"></a>                width<span class="op">=</span>diameter,</span>
-<span id="cb11-32"><a href="#cb11-32" aria-hidden="true" tabindex="-1"></a>                height<span class="op">=</span>diameter,</span>
-<span id="cb11-33"><a href="#cb11-33" aria-hidden="true" tabindex="-1"></a>                angle<span class="op">=</span><span class="dv">0</span>,</span>
-<span id="cb11-34"><a href="#cb11-34" aria-hidden="true" tabindex="-1"></a>                theta1<span class="op">=</span><span class="dv">0</span>,</span>
-<span id="cb11-35"><a href="#cb11-35" aria-hidden="true" tabindex="-1"></a>                theta2<span class="op">=</span><span class="dv">180</span>,</span>
-<span id="cb11-36"><a href="#cb11-36" aria-hidden="true" tabindex="-1"></a>                color<span class="op">=</span><span class="st">"#264653"</span>,</span>
-<span id="cb11-37"><a href="#cb11-37" aria-hidden="true" tabindex="-1"></a>                lw<span class="op">=</span><span class="fl">1.2</span>,</span>
-<span id="cb11-38"><a href="#cb11-38" aria-hidden="true" tabindex="-1"></a>                zorder<span class="op">=</span><span class="dv">2</span>,</span>
-<span id="cb11-39"><a href="#cb11-39" aria-hidden="true" tabindex="-1"></a>            )</span>
-<span id="cb11-40"><a href="#cb11-40" aria-hidden="true" tabindex="-1"></a>            ax.add_patch(arc)</span>
-<span id="cb11-41"><a href="#cb11-41" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-42"><a href="#cb11-42" aria-hidden="true" tabindex="-1"></a>    <span class="co"># ── nucleotide nodes ─────────────────────────────────────────────────────</span></span>
-<span id="cb11-43"><a href="#cb11-43" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> i, nt <span class="kw">in</span> <span class="bu">enumerate</span>(sequence):</span>
-<span id="cb11-44"><a href="#cb11-44" aria-hidden="true" tabindex="-1"></a>        color <span class="op">=</span> _NT_COLORS.get(nt.upper(), <span class="st">"#AAAAAA"</span>)</span>
-<span id="cb11-45"><a href="#cb11-45" aria-hidden="true" tabindex="-1"></a>        ax.scatter(i, <span class="dv">0</span>, color<span class="op">=</span>color, s<span class="op">=</span><span class="dv">120</span>, zorder<span class="op">=</span><span class="dv">3</span>)</span>
-<span id="cb11-46"><a href="#cb11-46" aria-hidden="true" tabindex="-1"></a>        ax.text(i, <span class="op">-</span><span class="fl">0.6</span>, nt, ha<span class="op">=</span><span class="st">'center'</span>, va<span class="op">=</span><span class="st">'top'</span>, fontsize<span class="op">=</span><span class="dv">7</span>, color<span class="op">=</span>color)</span>
-<span id="cb11-47"><a href="#cb11-47" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-48"><a href="#cb11-48" aria-hidden="true" tabindex="-1"></a>    <span class="co"># ── cosmetics ────────────────────────────────────────────────────────────</span></span>
-<span id="cb11-49"><a href="#cb11-49" aria-hidden="true" tabindex="-1"></a>    legend_handles <span class="op">=</span> [</span>
-<span id="cb11-50"><a href="#cb11-50" aria-hidden="true" tabindex="-1"></a>        mpatches.Patch(color<span class="op">=</span>col, label<span class="op">=</span>nt)</span>
-<span id="cb11-51"><a href="#cb11-51" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> nt, col <span class="kw">in</span> _NT_COLORS.items()</span>
-<span id="cb11-52"><a href="#cb11-52" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> nt <span class="kw">in</span> sequence.upper()</span>
-<span id="cb11-53"><a href="#cb11-53" aria-hidden="true" tabindex="-1"></a>    ]</span>
-<span id="cb11-54"><a href="#cb11-54" aria-hidden="true" tabindex="-1"></a>    ax.legend(handles<span class="op">=</span>legend_handles, loc<span class="op">=</span><span class="st">'upper right'</span>, framealpha<span class="op">=</span><span class="fl">0.9</span>)</span>
-<span id="cb11-55"><a href="#cb11-55" aria-hidden="true" tabindex="-1"></a>    ax.set_title(title, fontweight<span class="op">=</span><span class="st">'bold'</span>, pad<span class="op">=</span><span class="dv">10</span>)</span>
-<span id="cb11-56"><a href="#cb11-56" aria-hidden="true" tabindex="-1"></a>    ax.set_xlim(<span class="op">-</span><span class="dv">1</span>, n)</span>
-<span id="cb11-57"><a href="#cb11-57" aria-hidden="true" tabindex="-1"></a>    ax.set_ylim(<span class="op">-</span><span class="fl">1.5</span>, n <span class="op">/</span> <span class="dv">2</span>)</span>
-<span id="cb11-58"><a href="#cb11-58" aria-hidden="true" tabindex="-1"></a>    ax.axis(<span class="st">'off'</span>)</span>
-<span id="cb11-59"><a href="#cb11-59" aria-hidden="true" tabindex="-1"></a>    fig.tight_layout()</span>
-<span id="cb11-60"><a href="#cb11-60" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-61"><a href="#cb11-61" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> save_path:</span>
-<span id="cb11-62"><a href="#cb11-62" aria-hidden="true" tabindex="-1"></a>        fig.savefig(save_path, dpi<span class="op">=</span><span class="dv">150</span>, bbox_inches<span class="op">=</span><span class="st">'tight'</span>)</span>
-<span id="cb11-63"><a href="#cb11-63" aria-hidden="true" tabindex="-1"></a>    plt.show()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</div>
-<div id="2a054e22" class="cell" data-execution_count="10">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb12"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>turnip_virus_seq <span class="op">=</span> <span class="st">"GGGAGCUCAACUCUCCCCCCCUUUUCCGAGGGUCAUCGGAACCA"</span></span>
-<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>turnip_virus_edb <span class="op">=</span> <span class="st">"(((((.......)))))(((....[[[[[)))...]]]]]...."</span></span>
-<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>turnip_virus_pt <span class="op">=</span> dot_bracket_to_pairtable(turnip_virus_edb)</span>
-<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>plot_rna_arc(turnip_virus_seq, turnip_virus_pt, title<span class="op">=</span> <span class="st">'Turnip yellow mosaic virus - arc'</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="cell-output cell-output-display">
-<div>
-<figure class="figure">
-<p><img src="parsing-secondary_structure_files/figure-html/cell-11-output-1.png" width="1334" height="470" class="figure-img"></p>
-</figure>
-</div>
+└── [17, 39]</code></pre>
 </div>
 </div>
 </section>
 </section>
 <section id="step-by-step-tree-building" class="level2">
 <h2 class="anchored" data-anchor-id="step-by-step-tree-building">Step-by-step tree building</h2>
-<p>This is a Shinylive application embedded in a Quarto doc.</p>
+<p>For a <em>deeper</em> understanding of the Tree-building-algorithm, we can have a look at the exact state at each step of the <em>stack</em> and the <em>ClosedRegionTree</em> below.</p>
+<p>Load a new dot-bracket string (non-pseudoknotted or pseudoknotted) and see how the algorithm parses the structure.</p>
 <pre class="shinylive-python" data-engine="python"><code>#| '!! shinylive warning !!': |
 #|   shinylive does not work in self-contained HTML documents.
 #|   Please set `embed-resources: false` in your metadata.
@@ -1104,7 +1114,7 @@ def _step_for_base(steps, base):
     return idx
 
 app_ui = ui.page_fluid(
-    ui.h4("Closed region tree — step-through", style="margin-bottom:4px"),
+    ui.h4("Closed region tree — step-by-step", style="margin-bottom:4px"),
     ui.layout_columns(
         ui.input_text("structure", None, value=DEFAULT, width="100%"),
         ui.input_action_button("load", "Load", class_="btn-sm"),
@@ -1153,6 +1163,12 @@ def server(input, output, session):
         yield buf.read()
 
 app = App(app_ui, server)</code></pre>
+</section>
+</section>
+<section id="why-do-we-even-need-this" class="level1">
+<h1>Why do we even need this?</h1>
+<p>Now that we have successfully built the closed region tree, the question of <em>why</em> naturally arises. The answer lies in the free energy evaluation of RNA secondary structures. The total free energy of a structure is not a single global quantity — it decomposes into independent contributions from each closed region. This decomposition is only well-defined when we know exactly which regions are closed, and how they are nested. The closed region tree makes that hierarchy explicit, giving us a roadmap for computing free energy bottom-up: leaves first, propagating contributions up to the root.</p>
+<p>This matters enormously in practice. Free energy evaluation is the engine behind RNA structure prediction, and structure prediction underpins applications ranging from mRNA vaccine design — where the folding of the transcript directly affects stability and translation efficiency — to ribozyme engineering and other synthetic biology tasks where precise control over RNA shape is essential.</p>
 
 
 </section>
