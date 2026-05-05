@@ -271,13 +271,13 @@ window.Quarto = {
 <p>This algorithm was published in 2007 by <em>BAHARAK RASTEGARI</em> and <em>ANNE CONDON</em> in the JOURNAL OF COMPUTATIONAL BIOLOGY (DOI: 10.1089/cmb.2006.0108).</p>
 <section id="introduction" class="level1">
 <h1>Introduction</h1>
-<p>Pseudoknots are a class of RNA secondary structures that are found in all three domains of life as well as viruses <a href="https://en.wikipedia.org/wiki/Pseudoknot">wikipedia</a>.</p>
+<p>Pseudoknots are a class of RNA secondary structures that are found in all three domains of life as well as viruses <a href="https://en.wikipedia.org/wiki/Pseudoknot">Wikipedia</a>.</p>
 <p><em>Prediction</em> of pseudoknotted structures from a given sequence is a very, <em>very</em> difficult problem and found to be <em>NP-hard</em>. Prediction of non-pseudoknotted structures can be done via a dynamic programing approach in <span class="math inline">\(O(N^3)\)</span> time via e.g Nussinov or Zuker’s algorithm.</p>
 <p>In this blog post, we simply want to <strong>parse</strong> a given RNA molecule with its already predcited structure (pseudoknotted or non-pseudoknotted) and build a Tree-of-closed-regions of the structure.</p>
 <section id="setup" class="level2">
 <h2 class="anchored" data-anchor-id="setup">Setup</h2>
 <p>First we need to make sure python is running by importing some packages.</p>
-<div id="eb42c61f" class="cell" data-execution_count="1">
+<div id="8c40da2b" class="cell" data-execution_count="1">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> pandas <span class="im">as</span> pd</span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> matplotlib.pyplot <span class="im">as</span> plt</span>
@@ -295,7 +295,7 @@ window.Quarto = {
 <p>A RNA secondary structure can be shown in different ways. One common representation is the dot-bracket notation, where each base pair is represented with a opening <code>(</code> and closing bracket <code>)</code>. Nucleotides that are unbound are displayed as simple dots <code>.</code>.</p>
 <p>This representation needs to be extended with more opening and closing characters when we want to deal with pseudoknots. There, we introduce the extended dot-bracket notation that uses these supported bracket types <code>()  []  {}  &lt;&gt;  Aa  Bb  Cc  Dd  Ee  Ff  Gg  Hh  Ii  Jj</code>.</p>
 <p>Lets see a test example:</p>
-<div id="5e6d6f03" class="cell" data-execution_count="2">
+<div id="d1bff1bd" class="cell" data-execution_count="2">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>sequence <span class="op">=</span> <span class="st">"GCCCCAUGGAGGUGGCUGGGGCCAGCCUCAUGGAGGUGGCUGGGG"</span></span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>edb <span class="op">=</span> <span class="st">"...[[[[[[............((((((]]]]]]....)))))).."</span> <span class="co"># extended dot-bracket notation of RNA molecule</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
@@ -359,7 +359,7 @@ window.Quarto = {
 </div>
 </div>
 </div>
-<div id="70e8344e" class="cell" data-execution_count="3">
+<div id="d215c9bc" class="cell" data-execution_count="3">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> dot_bracket_to_pairtable(structure: <span class="bu">str</span>) <span class="op">-&gt;</span> <span class="bu">list</span>[<span class="bu">int</span> <span class="op">|</span> <span class="va">None</span>]:</span>
 <span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""</span></span>
 <span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="co">    Convert an extended dot-bracket string to a pair table representation.</span></span>
@@ -500,7 +500,7 @@ window.Quarto = {
 </table>
 <p>So, our resulting pair table should look like this: <code>[None, None, 7, 6, None, None, 3, 2]</code>.</p>
 <p>And indeed, if we run our function this is the correct pair table.</p>
-<div id="0d5bb7e5" class="cell" data-execution_count="4">
+<div id="68f295a3" class="cell" data-execution_count="4">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>example_edb <span class="op">=</span> <span class="st">"..[[..]]"</span></span>
 <span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>example_pt <span class="op">=</span> dot_bracket_to_pairtable(example_edb)</span>
 <span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(example_pt)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
@@ -513,7 +513,7 @@ window.Quarto = {
 <section id="arc-diagram" class="level1">
 <h1>Arc diagram</h1>
 <p>In order to visualize the connecting base pairs, one popular method is the so-called arc diagram. A simple implementation can be seen below. Every nucleotide type gets a different color, and the sequence is drawn as a straight line, where base pairings are shown as arc above the sequence. This immediatly shows <em>crossing base pairs</em> which indicate our pseudoknots.</p>
-<div id="bcb3ede9" class="cell" data-execution_count="5">
+<div id="bd687e16" class="cell" data-execution_count="5">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> matplotlib.pyplot <span class="im">as</span> plt</span>
 <span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> matplotlib.patches <span class="im">as</span> mpatches</span>
 <span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> matplotlib.patches <span class="im">import</span> Arc</span>
@@ -581,7 +581,7 @@ window.Quarto = {
 <section id="example-arc-diagram" class="level2">
 <h2 class="anchored" data-anchor-id="example-arc-diagram">Example arc diagram</h2>
 <p>Our example shows the arc diagram of an RNA secondary structure from the <em>Turnip yellow mosaic virus</em> and clearly shows crossing base pairs which indicate a pseudoknot.</p>
-<div id="6ca7fde1" class="cell" data-execution_count="6">
+<div id="c40c0a59" class="cell" data-execution_count="6">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb8"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>turnip_virus_seq <span class="op">=</span> <span class="st">"GGGAGCUCAACUCUCCCCCCCUUUUCCGAGGGUCAUCGGAACCA"</span></span>
 <span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>turnip_virus_edb <span class="op">=</span> <span class="st">"(((((.......)))))(((....[[[[[)))...]]]]]...."</span></span>
 <span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>turnip_virus_pt <span class="op">=</span> dot_bracket_to_pairtable(turnip_virus_edb)</span>
@@ -621,7 +621,7 @@ window.Quarto = {
 </div>
 </div>
 </div>
-<div id="07144572" class="cell" data-execution_count="7">
+<div id="e13b402a" class="cell" data-execution_count="7">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb9"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> __future__ <span class="im">import</span> annotations</span>
 <span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> dataclasses <span class="im">import</span> dataclass, field</span>
 <span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a></span>
@@ -722,7 +722,7 @@ window.Quarto = {
 <li>if the top of the stack ends beyond the current closing position and starts inside the current pair, the two intervals genuinely interleave, so they get merged into a single wider interval by tracking the furthest right boundary <code>E</code> seen so far.</li>
 </ul>
 <p>Once an interval on the stack is fully closed — meaning the current position <code>i</code> matches the right boundary of the stack top — it gets popped and handed to <code>tree.add()</code>, which slots it into the correct position in the tree using the postfix property: any previously attached node with a larger left border must be a child of the new node, not a sibling. The result is a tree where each node represents one closed region, nested exactly according to the containment structure of the input.</p>
-<div id="de670960" class="cell" data-execution_count="8">
+<div id="5a37f9c6" class="cell" data-execution_count="8">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb10"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> BuildClosedRegionsTree(structure: <span class="bu">str</span>):</span>
 <span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>    n <span class="op">=</span> <span class="bu">len</span>(structure)</span>
 <span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>    pt <span class="op">=</span> dot_bracket_to_pairtable(structure)</span>
@@ -763,7 +763,7 @@ window.Quarto = {
 <section id="example-tree" class="level3">
 <h3 class="anchored" data-anchor-id="example-tree">Example Tree</h3>
 <p>Here, we see the closed region tree of our <em>Turnip yellow mosaic virus</em>, shown with our<code>.display()</code> method. We defined our extended dot-bracket string earlier already, but is shown as a comment again.</p>
-<div id="9c65f4c5" class="cell" data-execution_count="9">
+<div id="f9395099" class="cell" data-execution_count="9">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb11"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="co">#turnip_virus_edb = "(((((.......)))))(((....[[[[[)))...]]]]]...."</span></span>
 <span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>turnip_tree <span class="op">=</span> BuildClosedRegionsTree(turnip_virus_edb)</span>
 <span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a></span>
@@ -1167,8 +1167,8 @@ app = App(app_ui, server)</code></pre>
 </section>
 <section id="why-do-we-even-need-this" class="level1">
 <h1>Why do we even need this?</h1>
-<p>Now that we have successfully built the closed region tree, the question of <em>why</em> naturally arises. The answer lies in the free energy evaluation of RNA secondary structures. The total free energy of a structure is not a single global quantity — it decomposes into independent contributions from each closed region. This decomposition is only well-defined when we know exactly which regions are closed, and how they are nested. The closed region tree makes that hierarchy explicit, giving us a roadmap for computing free energy bottom-up: leaves first, propagating contributions up to the root.</p>
-<p>This matters enormously in practice. Free energy evaluation is the engine behind RNA structure prediction, and structure prediction underpins applications ranging from mRNA vaccine design — where the folding of the transcript directly affects stability and translation efficiency — to ribozyme engineering and other synthetic biology tasks where precise control over RNA shape is essential.</p>
+<p>Now that we have successfully built the closed region tree, the question of <em>why</em> naturally arises. The answer lies in the free energy evaluation of RNA secondary structures. The total free energy of a structure can be decomposed into independent contributions from different secondary structure elements. In standard nearest-neighbor thermodynamic models (like the Turner energy model), the overall free energy of an RNA structure is calculated by summing the energy contributions of its constituent loops and stems <a href="https://en.wikipedia.org/wiki/Nucleic_acid_secondary_structure">Wikipedia</a>. Closed regions are necessary to determine which loop type is present in a given structure.</p>
+<p>This matters enormously in practice. Free energy evaluation is the most important aspect for RNA structure prediction, and structure prediction underpins applications ranging from mRNA vaccine design — where the folding of the transcript directly affects stability and translation efficiency — to ribozyme engineering and other synthetic biology tasks where precise control over RNA shape is essential.</p>
 
 
 </section>
